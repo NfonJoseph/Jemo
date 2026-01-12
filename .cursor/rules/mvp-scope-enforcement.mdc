@@ -1,0 +1,83 @@
+---
+alwaysApply: true
+
+This project is governed by the technical specification defined in
+`JEMO_PROJECT_SPEC.md`.
+
+The agent MUST:
+- Always read and follow JEMO_PROJECT_SPEC.md before generating or modifying code
+- Treat the specification as the single source of truth
+- Not implement features, models, roles, flows, or logic not explicitly defined in the spec
+- Ask for clarification if a request conflicts with or extends beyond the spec
+
+If there is any conflict between instructions, the contents of
+JEMO_PROJECT_SPEC.md always take priority.
+
+Only implement features explicitly defined in the Jemo MVP specification.
+Do not add new features, tables, endpoints, or logic unless explicitly requested.
+If a request goes beyond MVP scope, ask for confirmation before proceeding.
+
+Always generate code for only ONE module, feature, or file at a time.
+Never generate a full application, multiple modules, or unrelated features in a single response.
+
+Minimize the use of comments.
+Do NOT explain obvious code or restate what the code already shows.
+Add comments ONLY when:
+	•	Business logic is non-obvious
+	•	A rule affects money, permissions, or security
+	•	A decision is important for future developers
+
+Prefer clear, explicit, and readable code over clever or compact solutions.
+Avoid unnecessary abstractions, meta-programming, or over-optimization.
+
+Every endpoint, service, and UI route must enforce role-based access.
+Never assume a user’s role.
+Always validate role explicitly before allowing actions.
+
+If requirements, values, or flows are unclear, ask a clarification question before implementing.
+Do not invent business logic or defaults.
+
+The Prisma schema is the single source of truth.
+Do not modify database models, enums, or relationships unless explicitly instructed.
+All services must align with the schema exactly.
+
+Order, payment, delivery, and KYC status changes must be explicit and intentional.
+Never auto-advance statuses without a clear trigger or action.
+
+Do not optimize for performance, scale, or future features unless required for MVP correctness.
+Avoid caching layers, queues, microservices, or background jobs unless explicitly requested.
+
+All external inputs (API requests, forms, params) must be validated.
+Never trust client input.
+Reject invalid or missing data explicitly.
+
+Handle errors explicitly.
+Do not swallow errors or return generic responses.
+Use clear error messages for business logic failures.
+
+Avoid magic numbers and hardcoded strings for statuses, roles, or types.
+Use enums or constants defined in the project.
+
+Use consistent naming across backend and frontend.
+Database → API → UI naming must match exactly.
+Avoid synonyms or alternate naming.
+
+Never expose sensitive data (passwords, tokens, KYC documents).
+Always hash passwords.
+Protect admin and financial endpoints strictly.
+
+Code should be written in small, logical units that can be committed independently.
+Avoid large, sweeping changes across unrelated files.
+
+Output only the code requested.
+Do not add explanations, tutorials, or long descriptions unless explicitly asked.
+
+Comments are allowed and encouraged ONLY when:
+	•	Money is involved (payments, commissions, refunds)
+	•	Permissions or security rules apply
+	•	Order, delivery, or dispute logic is enforced
+
+If a task conflicts with existing rules, schema, or scope, STOP and ask for clarification before continuing.
+
+---
+

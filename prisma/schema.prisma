@@ -1,0 +1,262 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  VENDOR
+  RIDER
+  ADMIN
+}
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum DeliveryStatus {
+  SEARCHING_RIDER
+  ASSIGNED
+  PICKED_UP
+  ON_THE_WAY
+  DELIVERED
+  CANCELLED
+}
+
+enum DeliveryType {
+  VENDOR_DELIVERY
+  JEMO_RIDER
+}
+
+enum DealType {
+  TODAYS_DEAL
+  FLASH_SALE
+}
+
+enum ProductCategory {
+  ELECTRONICS
+  FASHION
+  HOME_GARDEN
+  COMPUTING
+  HEALTH_BEAUTY
+  SUPERMARKET
+  BABY_KIDS
+  GAMING
+  SPORTS_OUTDOORS
+  AUTOMOTIVE
+  BOOKS_STATIONERY
+  OTHER
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  role          UserRole
+  name          String
+  phone         String?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  vendorProfile VendorProfile?
+  riderProfile  RiderProfile?
+  orders        Order[]
+  disputes      Dispute[]
+
+  @@map("users")
+}
+
+model VendorProfile {
+  id            String      @id @default(cuid())
+  userId        String      @unique
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName  String
+  businessAddress String
+  kycStatus     KycStatus   @default(PENDING)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  kycSubmissions KycSubmission[]
+  products       Product[]
+
+  @@map("vendor_profiles")
+}
+
+model RiderProfile {
+  id            String      @id @default(cuid())
+  userId        String      @unique
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleType   String
+  licensePlate  String?
+  kycStatus     KycStatus   @default(PENDING)
+  isAvailable   Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  kycSubmissions KycSubmission[]
+  deliveries     Delivery[]
+
+  @@map("rider_profiles")
+}
+
+model KycSubmission {
+  id              String         @id @default(cuid())
+  vendorProfileId String?
+  vendorProfile   VendorProfile? @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
+  riderProfileId  String?
+  riderProfile    RiderProfile?  @relation(fields: [riderProfileId], references: [id], onDelete: Cascade)
+  documentType    String
+  documentUrl     String
+  status          KycStatus      @default(PENDING)
+  reviewedAt      DateTime?
+  reviewNotes     String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("kyc_submissions")
+}
+
+model Product {
+  id              String          @id @default(cuid())
+  vendorProfileId String
+  vendorProfile   VendorProfile   @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
+  name            String
+  nameEn          String?
+  nameFr          String?
+  description     String
+  descriptionEn   String?
+  descriptionFr   String?
+  price           Decimal         @db.Decimal(10, 2)
+  stock           Int             @default(0)
+  category        ProductCategory @default(OTHER)
+  deliveryType    DeliveryType
+  isActive        Boolean         @default(true)
+  
+  // Deal type and flash sale fields
+  dealType                DealType  @default(TODAYS_DEAL)
+  flashSalePrice          Decimal?  @db.Decimal(10, 2)
+  flashSaleDiscountPercent Int?
+  flashSaleStartAt        DateTime?
+  flashSaleEndAt          DateTime?
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  images     ProductImage[]
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("product_images")
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  customerId   String
+  customer     User        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  status       OrderStatus @default(PENDING_PAYMENT)
+  totalAmount  Decimal     @db.Decimal(10, 2)
+  deliveryAddress String
+  deliveryPhone   String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  items     OrderItem[]
+  payment   Payment?
+  delivery  Delivery?
+  disputes  Dispute[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+
+  @@map("order_items")
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  orderId       String        @unique
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount        Decimal       @db.Decimal(10, 2)
+  status        PaymentStatus @default(INITIATED)
+  paymentMethod String
+  transactionId String?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+model Delivery {
+  id             String         @id @default(cuid())
+  orderId        String         @unique
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  riderProfileId String?
+  riderProfile   RiderProfile?  @relation(fields: [riderProfileId], references: [id])
+  deliveryType   DeliveryType
+  status         DeliveryStatus @default(SEARCHING_RIDER)
+  pickedUpAt     DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@map("deliveries")
+}
+
+model Dispute {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId  String
+  customer    User     @relation(fields: [customerId], references: [id])
+  reason      String
+  description String
+  resolution  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("disputes")
+}
