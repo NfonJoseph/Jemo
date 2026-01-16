@@ -203,28 +203,54 @@
   "auth": {
     "login": "Login",
     "register": "Register",
-    "email": "Email",
-    "phone": "Phone",
+    "welcomeBack": "Welcome back",
+    "signInSubtitle": "Sign in to your account to continue",
+    "createAccount": "Create your account",
+    "createAccountSubtitle": "Join Jemo to start shopping from local vendors",
+    "phone": "Phone Number",
+    "phonePlaceholder": "e.g. 676 858 216",
+    "phoneHint": "Cameroon (+237)",
+    "phoneHelper": "Enter your Cameroon phone number",
     "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "createPasswordPlaceholder": "Create a password",
+    "passwordHelper": "At least 6 characters",
     "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Re-enter your password",
     "name": "Full Name",
+    "namePlaceholder": "Enter your full name",
     "forgotPassword": "Forgot password?",
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
-    "loginButton": "Sign In",
-    "registerButton": "Sign Up",
+    "signIn": "Sign In",
+    "signingIn": "Signing in...",
+    "createAccountButton": "Create Account",
+    "creatingAccount": "Creating account...",
+    "accountCreated": "Account created successfully!",
+    "welcomeBackToast": "Welcome back!",
     "orContinueWith": "Or continue with",
     "role": "Role",
     "roleCustomer": "Customer",
     "roleVendor": "Vendor",
     "roleRider": "Rider",
+    "captcha": {
+      "verifying": "Verifying...",
+      "verified": "Verified",
+      "failed": "Verification failed. Please try again."
+    },
     "errors": {
-      "invalidCredentials": "Invalid email or password",
-      "emailExists": "This email is already in use",
-      "phoneExists": "This phone number is already in use",
+      "invalidCredentials": "Invalid phone number or password",
+      "invalidPhone": "Please enter a valid Cameroon phone number",
+      "phoneRequired": "Phone number is required",
+      "phoneExists": "This phone number is already registered",
+      "passwordRequired": "Password is required",
       "passwordMismatch": "Passwords do not match",
-      "weakPassword": "Password is too weak",
-      "required": "This field is required"
+      "weakPassword": "Password must be at least 6 characters",
+      "nameRequired": "Full name is required",
+      "captchaRequired": "Please complete the verification",
+      "captchaFailed": "Verification failed. Please try again.",
+      "somethingWrong": "Something went wrong. Please try again.",
+      "registrationFailed": "Registration failed. Please try again."
     }
   },
   "account": {
@@ -232,11 +258,197 @@
     "profile": "Profile",
     "orders": "Orders",
     "settings": "Settings",
-    "kyc": "KYC Verification",
-    "becomeVendor": "Become a Vendor",
-    "becomeRider": "Become a Rider",
     "editProfile": "Edit Profile",
-    "changePassword": "Change Password"
+    "changePassword": "Change Password",
+    "myOrders": "My Orders",
+    "roles": {
+      "customer": "Customer",
+      "vendor": "Vendor",
+      "rider": "Rider",
+      "admin": "Admin"
+    },
+    "partner": {
+      "title": "Become a Partner",
+      "subtitle": "Expand your opportunities by becoming a vendor or rider on Jemo.",
+      "vendor": {
+        "title": "Become a Vendor",
+        "subtitle": "Sell your products"
+      },
+      "rider": {
+        "title": "Become a Rider",
+        "subtitle": "Deliver orders"
+      }
+    },
+    "dashboard": {
+      "vendor": "Go to Vendor Dashboard",
+      "rider": "Go to Rider Dashboard",
+      "admin": "Go to Admin Dashboard"
+    },
+    "kyc": {
+      "title": "KYC Status",
+      "verification": "KYC Verification",
+      "notSubmitted": "Not submitted",
+      "notSubmittedVendor": "Complete KYC verification to access vendor features.",
+      "notSubmittedRider": "Complete KYC verification to access rider features.",
+      "startVerification": "Start KYC Verification",
+      "pendingReview": "Your KYC is under review. This usually takes 24-48 hours. We'll notify you once it's complete.",
+      "approved": "Your account is verified. You can now access all features.",
+      "approvedVendor": "Your account is verified. You can now access all vendor features.",
+      "approvedRider": "Your account is verified. You can now access all rider features.",
+      "rejected": "Your KYC was rejected. Please resubmit with valid documents.",
+      "resubmit": "Resubmit KYC"
+    }
+  },
+  "vendorWizard": {
+    "title": "Become a Vendor",
+    "subtitle": "Join Jemo's marketplace and start selling today",
+    "steps": {
+      "type": "Account Type",
+      "fee": "Application Fee",
+      "details": "Details",
+      "kyc": "KYC",
+      "review": "Review"
+    },
+    "typeSelection": {
+      "title": "How would you like to register?",
+      "business": {
+        "title": "Register as a Business",
+        "description": "For registered businesses with a taxpayer card (NIF)"
+      },
+      "individual": {
+        "title": "Register as an Individual",
+        "description": "For individuals selling personal products or services"
+      }
+    },
+    "fee": {
+      "title": "Application Fee",
+      "amount": "1,000 FCFA",
+      "description": "One-time application fee to process your vendor registration",
+      "paid": "Payment Complete",
+      "paidMessage": "Your application fee has been paid. You can now proceed.",
+      "paymentRef": "Payment Reference",
+      "selectOperator": "Select Payment Method",
+      "mtnMomo": "MTN MoMo",
+      "orangeMoney": "Orange Money",
+      "phoneLabel": "Phone Number",
+      "phonePlaceholder": "676 858 216",
+      "phoneHint": "Enter the phone number linked to your mobile money account",
+      "phoneRequired": "Please enter your phone number",
+      "paymentInfo": "After clicking Pay Now, you'll receive a payment prompt on your phone. Enter your PIN to complete the payment.",
+      "payNow": "Pay 1,000 FCFA Now",
+      "processing": "Processing...",
+      "waitingTitle": "Complete Payment",
+      "waitingMessage": "A payment request has been sent to your phone",
+      "waitingInstructions": "Enter your mobile money PIN to complete the payment",
+      "dialCode": "Or dial this code:",
+      "checkingStatus": "Checking payment status",
+      "retry": "Try Again",
+      "pollTimeout": "Payment is taking longer than expected. Please check your mobile money balance.",
+      "paymentSuccess": "Payment successful! Proceeding to next step.",
+      "paymentFailed": "Payment failed. Please try again."
+    },
+    "business": {
+      "title": "Business Information",
+      "subtitle": "Tell us about your business",
+      "businessName": "Business Name",
+      "businessNamePlaceholder": "Your company or store name",
+      "businessAddress": "Business Address",
+      "businessAddressPlaceholder": "Full address of your business",
+      "businessPhone": "Business Phone",
+      "businessPhonePlaceholder": "676 858 216",
+      "businessEmail": "Business Email (optional)",
+      "businessEmailPlaceholder": "contact@yourcompany.com",
+      "taxpayerDoc": "Taxpayer Card / Taxpayer Registration (NIF)",
+      "taxpayerDocHelp": "Upload your official NIF document (PDF, JPG, or PNG, max 10MB)"
+    },
+    "individual": {
+      "title": "Personal Information",
+      "subtitle": "Your details as they appear on your ID",
+      "fullName": "Full Name (as on ID)",
+      "fullNamePlaceholder": "Your full legal name",
+      "location": "Location",
+      "locationPlaceholder": "City or neighborhood",
+      "phone": "Phone Number",
+      "phonePlaceholder": "676 858 216"
+    },
+    "kycPrep": {
+      "title": "KYC Verification",
+      "subtitle": "Prepare your documents for identity verification",
+      "requirements": "What you'll need:",
+      "idFront": "Front of your ID card",
+      "idBack": "Back of your ID card",
+      "selfie": "A clear selfie/headshot",
+      "tips": "Tips for best results:",
+      "tip1": "Use good lighting (natural daylight is best)",
+      "tip2": "Ensure text on ID is clearly readable",
+      "tip3": "Avoid blurry or dark photos",
+      "tip4": "Remove glasses for selfie if possible"
+    },
+    "capture": {
+      "title": "Capture Your Documents",
+      "subtitle": "Take photos of your ID and selfie",
+      "idFront": "ID Card (Front)",
+      "idBack": "ID Card (Back)",
+      "selfie": "Selfie",
+      "capture": "Capture",
+      "retake": "Retake",
+      "upload": "Upload File",
+      "uploadFallback": "Camera not available. Please upload files instead.",
+      "captured": "Photo captured",
+      "orUpload": "or upload a file"
+    },
+    "review": {
+      "title": "Review & Submit",
+      "subtitle": "Please verify your information before submitting",
+      "businessInfo": "Business Information",
+      "personalInfo": "Personal Information",
+      "documents": "Documents",
+      "submit": "Submit Application"
+    },
+    "upload": {
+      "dragDrop": "Drag & drop file here or click to browse",
+      "replace": "Replace file",
+      "uploaded": "Uploaded",
+      "maxSize": "Maximum file size: 10MB",
+      "formats": "Accepted formats: PDF, JPG, PNG"
+    },
+    "status": {
+      "draft": "Draft",
+      "pendingPayment": "Pending Payment",
+      "pendingVerification": "Pending Verification",
+      "pendingKyc": "KYC Review",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "success": {
+      "businessTitle": "Application Submitted!",
+      "businessMessage": "Thank you! We'll contact you by phone to complete verification.",
+      "individualTitle": "KYC Submitted!",
+      "individualMessage": "Thank you! We'll review your documents and contact you soon."
+    },
+    "accountStatus": {
+      "title": "Vendor Application",
+      "continue": "Continue Application",
+      "resubmit": "Resubmit Application",
+      "viewDetails": "View Details",
+      "pendingVerification": "Your application is being reviewed. We'll contact you by phone to complete verification.",
+      "pendingKyc": "Your KYC documents are being reviewed. We'll notify you once complete.",
+      "rejected": "Your application was rejected.",
+      "approved": "Your vendor account is active!",
+      "goToDashboard": "Go to Dashboard"
+    },
+    "errors": {
+      "invalidPhone": "Please enter a valid Cameroon phone number",
+      "fileRequired": "This file is required",
+      "fileTooLarge": "File too large. Maximum size is 10MB",
+      "invalidFileType": "Invalid file type. Use PDF, JPG, or PNG",
+      "missingFields": "Please fill in all required fields",
+      "paymentRequired": "Please pay the application fee first"
+    },
+    "phoneHint": "Cameroon (+237)",
+    "next": "Next",
+    "back": "Back",
+    "saveDraft": "Save Draft"
   },
   "orders": {
     "title": "My Orders",

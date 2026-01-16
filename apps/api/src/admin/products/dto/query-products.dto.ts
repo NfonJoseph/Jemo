@@ -1,43 +1,42 @@
-import { IsString, IsOptional, IsInt, IsEnum, IsBoolean, Min, Max } from 'class-validator';
-import { DealType, ProductCategory } from '@prisma/client';
+import { IsOptional, IsString, IsInt, Min, Max, IsIn, IsBoolean, IsEnum } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
+import { DealType, ProductStatus } from '@prisma/client';
 
 export class QueryProductsDto {
-  @IsString()
   @IsOptional()
+  @IsString()
   q?: string;
 
-  @IsEnum(DealType)
   @IsOptional()
+  @IsEnum(DealType)
   dealType?: DealType;
 
-  @IsEnum(ProductCategory)
   @IsOptional()
-  category?: ProductCategory;
+  @IsString()
+  categorySlug?: string;
 
-  @IsBoolean()
   @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
-  isActive?: boolean;
+  @IsEnum(ProductStatus)
+  status?: ProductStatus;
 
+  @IsOptional()
   @IsInt()
-  @IsOptional()
   @Min(1)
   @Type(() => Number)
   page?: number = 1;
 
-  @IsInt()
   @IsOptional()
+  @IsInt()
   @Min(1)
   @Max(100)
   @Type(() => Number)
   pageSize?: number = 20;
 
-  @IsString()
   @IsOptional()
-  sortBy?: 'createdAt' | 'name' | 'price' | 'stock' = 'createdAt';
+  @IsIn(['createdAt', 'updatedAt', 'price', 'stock', 'name'])
+  sortBy?: string = 'createdAt';
 
-  @IsString()
   @IsOptional()
+  @IsIn(['asc', 'desc'])
   sortOrder?: 'asc' | 'desc' = 'desc';
 }

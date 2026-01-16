@@ -1,34 +1,62 @@
-import { IsString, IsNumber, IsOptional, IsBoolean, IsEnum, IsInt, Min, Max, IsArray, ValidateIf, IsDateString } from 'class-validator';
-import { DealType, DeliveryType, ProductCategory } from '@prisma/client';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+  IsArray,
+  ValidateIf,
+  IsDateString,
+  ValidateNested,
+  ArrayMinSize,
+} from 'class-validator';
+import { DealType, DeliveryType, ProductCondition, ProductStatus, StockStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
+
+export class AdminProductImageDto {
+  @IsString()
+  objectKey!: string;
+
+  @IsString()
+  url!: string;
+
+  @IsString()
+  mimeType!: string;
+
+  @IsNumber()
+  size!: number;
+
+  @IsNumber()
+  @Min(0)
+  sortOrder!: number;
+
+  @IsBoolean()
+  isMain!: boolean;
+}
 
 export class CreateProductDto {
   @IsString()
   name!: string;
 
   @IsString()
-  @IsOptional()
-  nameEn?: string;
-
-  @IsString()
-  @IsOptional()
-  nameFr?: string;
-
-  @IsString()
   description!: string;
 
   @IsString()
-  @IsOptional()
-  descriptionEn?: string;
-
-  @IsString()
-  @IsOptional()
-  descriptionFr?: string;
+  categoryId!: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Type(() => Number)
   @Min(0)
   price!: number;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  discountPrice?: number;
 
   @IsInt()
   @IsOptional()
@@ -36,16 +64,59 @@ export class CreateProductDto {
   @Type(() => Number)
   stock?: number;
 
-  @IsEnum(ProductCategory)
+  @IsEnum(StockStatus)
   @IsOptional()
-  category?: ProductCategory;
+  stockStatus?: StockStatus;
+
+  @IsString()
+  city!: string;
 
   @IsEnum(DeliveryType)
   deliveryType!: DeliveryType;
 
+  // Vendor delivery options
   @IsBoolean()
   @IsOptional()
-  isActive?: boolean;
+  pickupAvailable?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  localDelivery?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  nationwideDelivery?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  freeDelivery?: boolean;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  flatDeliveryFee?: number;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  sameCityDeliveryFee?: number;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  otherCityDeliveryFee?: number;
+
+  @IsEnum(ProductCondition)
+  @IsOptional()
+  condition?: ProductCondition;
+
+  @IsBoolean()
+  @IsOptional()
+  authenticityConfirmed?: boolean;
+
+  @IsEnum(ProductStatus)
+  @IsOptional()
+  status?: ProductStatus;
 
   @IsString()
   vendorProfileId!: string;
@@ -58,7 +129,7 @@ export class CreateProductDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsOptional()
   @Type(() => Number)
-  @ValidateIf(o => o.dealType === DealType.FLASH_SALE)
+  @ValidateIf((o) => o.dealType === DealType.FLASH_SALE)
   flashSalePrice?: number;
 
   @IsInt()
@@ -66,21 +137,23 @@ export class CreateProductDto {
   @Min(1)
   @Max(90)
   @Type(() => Number)
-  @ValidateIf(o => o.dealType === DealType.FLASH_SALE)
+  @ValidateIf((o) => o.dealType === DealType.FLASH_SALE)
   flashSaleDiscountPercent?: number;
 
   @IsDateString()
   @IsOptional()
-  @ValidateIf(o => o.dealType === DealType.FLASH_SALE)
+  @ValidateIf((o) => o.dealType === DealType.FLASH_SALE)
   flashSaleStartAt?: string;
 
   @IsDateString()
   @IsOptional()
-  @ValidateIf(o => o.dealType === DealType.FLASH_SALE)
+  @ValidateIf((o) => o.dealType === DealType.FLASH_SALE)
   flashSaleEndAt?: string;
 
   @IsArray()
-  @IsString({ each: true })
+  @ValidateNested({ each: true })
+  @ArrayMinSize(1, { message: 'At least one product image is required' })
+  @Type(() => AdminProductImageDto)
   @IsOptional()
-  imageUrls?: string[];
+  images?: AdminProductImageDto[];
 }

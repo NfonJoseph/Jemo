@@ -203,28 +203,54 @@
   "auth": {
     "login": "Connexion",
     "register": "Inscription",
-    "email": "Email",
-    "phone": "Téléphone",
+    "welcomeBack": "Bon retour",
+    "signInSubtitle": "Connectez-vous à votre compte pour continuer",
+    "createAccount": "Créez votre compte",
+    "createAccountSubtitle": "Rejoignez Jemo pour acheter auprès de vendeurs locaux",
+    "phone": "Numéro de téléphone",
+    "phonePlaceholder": "ex: 676 858 216",
+    "phoneHint": "Cameroun (+237)",
+    "phoneHelper": "Entrez votre numéro de téléphone camerounais",
     "password": "Mot de passe",
+    "passwordPlaceholder": "Entrez votre mot de passe",
+    "createPasswordPlaceholder": "Créez un mot de passe",
+    "passwordHelper": "Au moins 6 caractères",
     "confirmPassword": "Confirmer le mot de passe",
+    "confirmPasswordPlaceholder": "Ressaisissez votre mot de passe",
     "name": "Nom complet",
+    "namePlaceholder": "Entrez votre nom complet",
     "forgotPassword": "Mot de passe oublié?",
     "noAccount": "Pas encore de compte?",
     "hasAccount": "Vous avez déjà un compte?",
-    "loginButton": "Se connecter",
-    "registerButton": "S'inscrire",
+    "signIn": "Se connecter",
+    "signingIn": "Connexion en cours...",
+    "createAccountButton": "Créer un compte",
+    "creatingAccount": "Création du compte...",
+    "accountCreated": "Compte créé avec succès!",
+    "welcomeBackToast": "Bon retour!",
     "orContinueWith": "Ou continuer avec",
     "role": "Rôle",
     "roleCustomer": "Client",
     "roleVendor": "Vendeur",
     "roleRider": "Livreur",
+    "captcha": {
+      "verifying": "Vérification...",
+      "verified": "Vérifié",
+      "failed": "Échec de la vérification. Veuillez réessayer."
+    },
     "errors": {
-      "invalidCredentials": "Email ou mot de passe incorrect",
-      "emailExists": "Cet email est déjà utilisé",
-      "phoneExists": "Ce numéro est déjà utilisé",
+      "invalidCredentials": "Numéro de téléphone ou mot de passe incorrect",
+      "invalidPhone": "Veuillez entrer un numéro de téléphone camerounais valide",
+      "phoneRequired": "Le numéro de téléphone est requis",
+      "phoneExists": "Ce numéro de téléphone est déjà enregistré",
+      "passwordRequired": "Le mot de passe est requis",
       "passwordMismatch": "Les mots de passe ne correspondent pas",
-      "weakPassword": "Le mot de passe est trop faible",
-      "required": "Ce champ est requis"
+      "weakPassword": "Le mot de passe doit contenir au moins 6 caractères",
+      "nameRequired": "Le nom complet est requis",
+      "captchaRequired": "Veuillez compléter la vérification",
+      "captchaFailed": "Échec de la vérification. Veuillez réessayer.",
+      "somethingWrong": "Une erreur s'est produite. Veuillez réessayer.",
+      "registrationFailed": "Échec de l'inscription. Veuillez réessayer."
     }
   },
   "account": {
@@ -232,11 +258,197 @@
     "profile": "Profil",
     "orders": "Commandes",
     "settings": "Paramètres",
-    "kyc": "Vérification KYC",
-    "becomeVendor": "Devenir vendeur",
-    "becomeRider": "Devenir livreur",
     "editProfile": "Modifier le profil",
-    "changePassword": "Changer le mot de passe"
+    "changePassword": "Changer le mot de passe",
+    "myOrders": "Mes commandes",
+    "roles": {
+      "customer": "Client",
+      "vendor": "Vendeur",
+      "rider": "Livreur",
+      "admin": "Administrateur"
+    },
+    "partner": {
+      "title": "Devenir partenaire",
+      "subtitle": "Développez vos opportunités en devenant vendeur ou livreur sur Jemo.",
+      "vendor": {
+        "title": "Devenir vendeur",
+        "subtitle": "Vendre vos produits"
+      },
+      "rider": {
+        "title": "Devenir livreur",
+        "subtitle": "Livrer des commandes"
+      }
+    },
+    "dashboard": {
+      "vendor": "Aller au tableau de bord vendeur",
+      "rider": "Aller au tableau de bord livreur",
+      "admin": "Aller au tableau de bord admin"
+    },
+    "kyc": {
+      "title": "Statut KYC",
+      "verification": "Vérification KYC",
+      "notSubmitted": "Non soumis",
+      "notSubmittedVendor": "Complétez la vérification KYC pour accéder aux fonctionnalités vendeur.",
+      "notSubmittedRider": "Complétez la vérification KYC pour accéder aux fonctionnalités livreur.",
+      "startVerification": "Commencer la vérification KYC",
+      "pendingReview": "Votre KYC est en cours d'examen. Cela prend généralement 24 à 48 heures. Nous vous informerons une fois terminé.",
+      "approved": "Votre compte est vérifié. Vous pouvez maintenant accéder à toutes les fonctionnalités.",
+      "approvedVendor": "Votre compte est vérifié. Vous pouvez maintenant accéder à toutes les fonctionnalités vendeur.",
+      "approvedRider": "Votre compte est vérifié. Vous pouvez maintenant accéder à toutes les fonctionnalités livreur.",
+      "rejected": "Votre KYC a été rejeté. Veuillez soumettre à nouveau avec des documents valides.",
+      "resubmit": "Soumettre à nouveau le KYC"
+    }
+  },
+  "vendorWizard": {
+    "title": "Devenir Vendeur",
+    "subtitle": "Rejoignez la marketplace Jemo et commencez à vendre dès aujourd'hui",
+    "steps": {
+      "type": "Type de compte",
+      "fee": "Frais d'inscription",
+      "details": "Détails",
+      "kyc": "KYC",
+      "review": "Vérification"
+    },
+    "typeSelection": {
+      "title": "Comment souhaitez-vous vous inscrire ?",
+      "business": {
+        "title": "S'inscrire en tant qu'entreprise",
+        "description": "Pour les entreprises enregistrées avec une carte de contribuable (NIF)"
+      },
+      "individual": {
+        "title": "S'inscrire en tant que particulier",
+        "description": "Pour les particuliers vendant des produits ou services personnels"
+      }
+    },
+    "fee": {
+      "title": "Frais d'inscription",
+      "amount": "1 000 FCFA",
+      "description": "Frais uniques pour traiter votre inscription vendeur",
+      "paid": "Paiement effectué",
+      "paidMessage": "Vos frais d'inscription ont été payés. Vous pouvez maintenant continuer.",
+      "paymentRef": "Référence de paiement",
+      "selectOperator": "Choisir le mode de paiement",
+      "mtnMomo": "MTN MoMo",
+      "orangeMoney": "Orange Money",
+      "phoneLabel": "Numéro de téléphone",
+      "phonePlaceholder": "676 858 216",
+      "phoneHint": "Entrez le numéro lié à votre compte mobile money",
+      "phoneRequired": "Veuillez entrer votre numéro de téléphone",
+      "paymentInfo": "Après avoir cliqué sur Payer, vous recevrez une demande de paiement sur votre téléphone. Entrez votre code PIN pour valider.",
+      "payNow": "Payer 1 000 FCFA maintenant",
+      "processing": "Traitement en cours...",
+      "waitingTitle": "Finaliser le paiement",
+      "waitingMessage": "Une demande de paiement a été envoyée à votre téléphone",
+      "waitingInstructions": "Entrez votre code PIN mobile money pour valider le paiement",
+      "dialCode": "Ou composez ce code :",
+      "checkingStatus": "Vérification du statut",
+      "retry": "Réessayer",
+      "pollTimeout": "Le paiement prend plus de temps que prévu. Vérifiez votre solde mobile money.",
+      "paymentSuccess": "Paiement réussi ! Passage à l'étape suivante.",
+      "paymentFailed": "Le paiement a échoué. Veuillez réessayer."
+    },
+    "business": {
+      "title": "Informations sur l'entreprise",
+      "subtitle": "Parlez-nous de votre entreprise",
+      "businessName": "Nom de l'entreprise",
+      "businessNamePlaceholder": "Nom de votre société ou magasin",
+      "businessAddress": "Adresse de l'entreprise",
+      "businessAddressPlaceholder": "Adresse complète de votre entreprise",
+      "businessPhone": "Téléphone professionnel",
+      "businessPhonePlaceholder": "676 858 216",
+      "businessEmail": "Email professionnel (optionnel)",
+      "businessEmailPlaceholder": "contact@votreentreprise.cm",
+      "taxpayerDoc": "Carte de contribuable / Document NIF",
+      "taxpayerDocHelp": "Téléchargez votre document NIF officiel (PDF, JPG ou PNG, max 10Mo)"
+    },
+    "individual": {
+      "title": "Informations personnelles",
+      "subtitle": "Vos coordonnées telles qu'elles apparaissent sur votre pièce d'identité",
+      "fullName": "Nom complet (tel que sur la CNI)",
+      "fullNamePlaceholder": "Votre nom complet légal",
+      "location": "Localisation",
+      "locationPlaceholder": "Ville ou quartier",
+      "phone": "Numéro de téléphone",
+      "phonePlaceholder": "676 858 216"
+    },
+    "kycPrep": {
+      "title": "Vérification KYC",
+      "subtitle": "Préparez vos documents pour la vérification d'identité",
+      "requirements": "Ce dont vous aurez besoin :",
+      "idFront": "Recto de votre carte d'identité",
+      "idBack": "Verso de votre carte d'identité",
+      "selfie": "Un selfie/photo de vous clair(e)",
+      "tips": "Conseils pour de meilleurs résultats :",
+      "tip1": "Utilisez un bon éclairage (la lumière naturelle est idéale)",
+      "tip2": "Assurez-vous que le texte sur la CNI est lisible",
+      "tip3": "Évitez les photos floues ou sombres",
+      "tip4": "Retirez vos lunettes pour le selfie si possible"
+    },
+    "capture": {
+      "title": "Capturez vos documents",
+      "subtitle": "Prenez des photos de votre CNI et un selfie",
+      "idFront": "CNI (Recto)",
+      "idBack": "CNI (Verso)",
+      "selfie": "Selfie",
+      "capture": "Capturer",
+      "retake": "Reprendre",
+      "upload": "Télécharger un fichier",
+      "uploadFallback": "Caméra non disponible. Veuillez télécharger des fichiers.",
+      "captured": "Photo capturée",
+      "orUpload": "ou télécharger un fichier"
+    },
+    "review": {
+      "title": "Vérification et soumission",
+      "subtitle": "Veuillez vérifier vos informations avant de soumettre",
+      "businessInfo": "Informations sur l'entreprise",
+      "personalInfo": "Informations personnelles",
+      "documents": "Documents",
+      "submit": "Soumettre la demande"
+    },
+    "upload": {
+      "dragDrop": "Glissez-déposez un fichier ici ou cliquez pour parcourir",
+      "replace": "Remplacer le fichier",
+      "uploaded": "Téléchargé",
+      "maxSize": "Taille maximale du fichier : 10Mo",
+      "formats": "Formats acceptés : PDF, JPG, PNG"
+    },
+    "status": {
+      "draft": "Brouillon",
+      "pendingPayment": "En attente de paiement",
+      "pendingVerification": "En cours de vérification",
+      "pendingKyc": "Examen KYC",
+      "approved": "Approuvé",
+      "rejected": "Rejeté"
+    },
+    "success": {
+      "businessTitle": "Demande soumise !",
+      "businessMessage": "Merci ! Nous vous contacterons par téléphone pour finaliser la vérification.",
+      "individualTitle": "KYC soumis !",
+      "individualMessage": "Merci ! Nous examinerons vos documents et vous contacterons bientôt."
+    },
+    "accountStatus": {
+      "title": "Demande vendeur",
+      "continue": "Continuer la demande",
+      "resubmit": "Soumettre à nouveau",
+      "viewDetails": "Voir les détails",
+      "pendingVerification": "Votre demande est en cours d'examen. Nous vous contacterons par téléphone pour finaliser la vérification.",
+      "pendingKyc": "Vos documents KYC sont en cours d'examen. Nous vous informerons une fois terminé.",
+      "rejected": "Votre demande a été rejetée.",
+      "approved": "Votre compte vendeur est actif !",
+      "goToDashboard": "Aller au tableau de bord"
+    },
+    "errors": {
+      "invalidPhone": "Veuillez entrer un numéro de téléphone camerounais valide",
+      "fileRequired": "Ce fichier est requis",
+      "fileTooLarge": "Fichier trop volumineux. Taille maximale : 10Mo",
+      "invalidFileType": "Type de fichier invalide. Utilisez PDF, JPG ou PNG",
+      "missingFields": "Veuillez remplir tous les champs requis",
+      "paymentRequired": "Veuillez d'abord payer les frais d'inscription"
+    },
+    "phoneHint": "Cameroun (+237)",
+    "next": "Suivant",
+    "back": "Retour",
+    "saveDraft": "Enregistrer le brouillon"
   },
   "orders": {
     "title": "Mes commandes",

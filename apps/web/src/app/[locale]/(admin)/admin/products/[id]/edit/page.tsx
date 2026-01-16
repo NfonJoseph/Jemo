@@ -8,22 +8,26 @@ import { useTranslations, useLocale } from "@/lib/translations";
 import { useToast } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Save, Zap, Tag, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Zap, Tag, Loader2, Clock, CheckCircle, XCircle, Ban } from "lucide-react";
 
 // Types
+type ProductStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "SUSPENDED";
+
 interface Product {
   id: string;
   name: string;
-  nameEn: string | null;
-  nameFr: string | null;
   description: string;
-  descriptionEn: string | null;
-  descriptionFr: string | null;
   price: number;
+  discountPrice: number | null;
   stock: number;
-  category: string;
+  stockStatus: string;
+  city: string;
+  category: { id: string; slug: string; nameEn: string; nameFr: string } | null;
   deliveryType: string;
-  isActive: boolean;
+  status: ProductStatus;
+  condition: string;
+  rejectionReason: string | null;
+  reviewedAt: string | null;
   dealType: "TODAYS_DEAL" | "FLASH_SALE";
   flashSalePrice: number | null;
   flashSaleDiscountPercent: number | null;
@@ -33,31 +37,58 @@ interface Product {
     id: string;
     businessName: string;
   };
-  images: { id: string; url: string; isPrimary: boolean }[];
+  images: { id: string; url: string; objectKey: string; isMain: boolean }[];
 }
-
-const CATEGORIES = [
-  "ELECTRONICS",
-  "FASHION",
-  "HOME_GARDEN",
-  "COMPUTING",
-  "HEALTH_BEAUTY",
-  "SUPERMARKET",
-  "BABY_KIDS",
-  "GAMING",
-  "SPORTS_OUTDOORS",
-  "AUTOMOTIVE",
-  "BOOKS_STATIONERY",
-  "OTHER",
-] as const;
 
 const DELIVERY_TYPES = ["VENDOR_DELIVERY", "JEMO_RIDER"] as const;
 const DEAL_TYPES = ["TODAYS_DEAL", "FLASH_SALE"] as const;
+const PRODUCT_STATUSES: ProductStatus[] = ["PENDING_APPROVAL", "APPROVED", "REJECTED", "SUSPENDED"];
 
-function formatDateTimeLocal(dateStr: string | null): string {
+// Default form state to prevent uncontrolled->controlled warnings
+const getDefaultFormData = () => ({
+  name: "",
+  description: "",
+  price: "",
+  discountPrice: "",
+  stock: "0",
+  stockStatus: "IN_STOCK",
+  city: "",
+  categoryId: "",
+  deliveryType: "JEMO_RIDER" as typeof DELIVERY_TYPES[number],
+  status: "PENDING_APPROVAL" as ProductStatus,
+  condition: "NEW",
+  dealType: "TODAYS_DEAL" as typeof DEAL_TYPES[number],
+  flashSalePrice: "",
+  flashSaleDiscountPercent: "",
+  flashSaleStartAt: "",
+  flashSaleEndAt: "",
+});
+
+function formatDateTimeLocal(dateStr: string | null | undefined): string {
   if (!dateStr) return "";
-  const date = new Date(dateStr);
-  return date.toISOString().slice(0, 16);
+  try {
+    const date = new Date(dateStr);
+    return date.toISOString().slice(0, 16);
+  } catch {
+    return "";
+  }
+}
+
+// Status badge for display
+function StatusBadge({ status }: { status: ProductStatus }) {
+  const config: Record<ProductStatus, { bg: string; text: string; icon: React.ReactNode; label: string }> = {
+    PENDING_APPROVAL: { bg: "bg-yellow-100", text: "text-yellow-700", icon: <Clock className="w-4 h-4" />, label: "Pending Review" },
+    APPROVED: { bg: "bg-green-100", text: "text-green-700", icon: <CheckCircle className="w-4 h-4" />, label: "Approved" },
+    REJECTED: { bg: "bg-red-100", text: "text-red-700", icon: <XCircle className="w-4 h-4" />, label: "Rejected" },
+    SUSPENDED: { bg: "bg-gray-100", text: "text-gray-700", icon: <Ban className="w-4 h-4" />, label: "Suspended" },
+  };
+  const { bg, text, icon, label } = config[status] || config.PENDING_APPROVAL;
+  return (
+    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${bg} ${text}`}>
+      {icon}
+      {label}
+    </span>
+  );
 }
 
 export default function EditProductPage({
@@ -77,27 +108,8 @@ export default function EditProductPage({
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [product, setProduct] = useState<Product | null>(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    name: "",
-    nameEn: "",
-    nameFr: "",
-    description: "",
-    descriptionEn: "",
-    descriptionFr: "",
-    price: "",
-    stock: "0",
-    category: "OTHER" as typeof CATEGORIES[number],
-    deliveryType: "JEMO_RIDER" as typeof DELIVERY_TYPES[number],
-    isActive: true,
-    dealType: "TODAYS_DEAL" as typeof DEAL_TYPES[number],
-    flashSalePrice: "",
-    flashSaleDiscountPercent: "",
-    flashSaleStartAt: "",
-    flashSaleEndAt: "",
-    imageUrls: [] as string[],
-  });
-
+  // Form state - initialized with safe defaults
+  const [formData, setFormData] = useState(getDefaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Load product
@@ -110,24 +122,25 @@ export default function EditProductPage({
     try {
       const data = await api.get<Product>(`/admin/products/${id}`, true);
       setProduct(data);
+      
+      // Hydrate form with safe coercion to prevent uncontrolled->controlled issues
       setFormData({
-        name: data.name,
-        nameEn: data.nameEn || "",
-        nameFr: data.nameFr || "",
-        description: data.description,
-        descriptionEn: data.descriptionEn || "",
-        descriptionFr: data.descriptionFr || "",
-        price: data.price.toString(),
-        stock: data.stock.toString(),
-        category: data.category as typeof CATEGORIES[number],
-        deliveryType: data.deliveryType as typeof DELIVERY_TYPES[number],
-        isActive: data.isActive,
-        dealType: data.dealType,
-        flashSalePrice: data.flashSalePrice?.toString() || "",
-        flashSaleDiscountPercent: data.flashSaleDiscountPercent?.toString() || "",
+        name: String(data.name ?? ""),
+        description: String(data.description ?? ""),
+        price: data.price != null ? String(data.price) : "",
+        discountPrice: data.discountPrice != null ? String(data.discountPrice) : "",
+        stock: data.stock != null ? String(data.stock) : "0",
+        stockStatus: String(data.stockStatus ?? "IN_STOCK"),
+        city: String(data.city ?? ""),
+        categoryId: data.category?.id ?? "",
+        deliveryType: (data.deliveryType as typeof DELIVERY_TYPES[number]) || "JEMO_RIDER",
+        status: (data.status as ProductStatus) || "PENDING_APPROVAL",
+        condition: String(data.condition ?? "NEW"),
+        dealType: (data.dealType as typeof DEAL_TYPES[number]) || "TODAYS_DEAL",
+        flashSalePrice: data.flashSalePrice != null ? String(data.flashSalePrice) : "",
+        flashSaleDiscountPercent: data.flashSaleDiscountPercent != null ? String(data.flashSaleDiscountPercent) : "",
         flashSaleStartAt: formatDateTimeLocal(data.flashSaleStartAt),
         flashSaleEndAt: formatDateTimeLocal(data.flashSaleEndAt),
-        imageUrls: data.images.map((img) => img.url),
       });
     } catch (err) {
       console.error("Failed to load product:", err);
@@ -182,17 +195,17 @@ export default function EditProductPage({
     setLoading(true);
     try {
       const payload = {
-        name: formData.name,
-        nameEn: formData.nameEn || null,
-        nameFr: formData.nameFr || null,
-        description: formData.description,
-        descriptionEn: formData.descriptionEn || null,
-        descriptionFr: formData.descriptionFr || null,
-        price: parseFloat(formData.price),
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        price: parseFloat(formData.price) || 0,
+        discountPrice: formData.discountPrice ? parseFloat(formData.discountPrice) : null,
         stock: parseInt(formData.stock, 10) || 0,
-        category: formData.category,
+        stockStatus: formData.stockStatus,
+        city: formData.city,
+        categoryId: formData.categoryId || undefined,
         deliveryType: formData.deliveryType,
-        isActive: formData.isActive,
+        status: formData.status,
+        condition: formData.condition,
         dealType: formData.dealType,
         flashSalePrice: formData.flashSalePrice ? parseFloat(formData.flashSalePrice) : null,
         flashSaleDiscountPercent: formData.flashSaleDiscountPercent ? parseInt(formData.flashSaleDiscountPercent, 10) : null,
@@ -212,7 +225,7 @@ export default function EditProductPage({
   };
 
   // Form input handler
-  const handleChange = (field: string, value: string | boolean) => {
+  const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -249,12 +262,27 @@ export default function EditProductPage({
         <h1 className="text-2xl font-bold text-gray-900">{t("editProduct")}</h1>
       </div>
 
-      {/* Vendor Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <p className="text-sm text-blue-700">
-          <span className="font-medium">{t("vendor")}:</span> {product.vendorProfile.businessName}
-        </p>
+      {/* Vendor Info & Status */}
+      <div className="flex flex-wrap gap-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex-1">
+          <p className="text-sm text-blue-700">
+            <span className="font-medium">{t("vendor")}:</span> {product.vendorProfile.businessName}
+          </p>
+        </div>
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center gap-3">
+          <span className="text-sm text-gray-600 font-medium">Status:</span>
+          <StatusBadge status={product.status} />
+        </div>
       </div>
+
+      {/* Rejection Reason */}
+      {product.status === "REJECTED" && product.rejectionReason && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <p className="text-sm text-red-700">
+            <span className="font-medium">Rejection Reason:</span> {product.rejectionReason}
+          </p>
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -277,34 +305,6 @@ export default function EditProductPage({
               {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
             </div>
 
-            {/* Name EN */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t("nameEn")}
-              </label>
-              <input
-                type="text"
-                value={formData.nameEn}
-                onChange={(e) => handleChange("nameEn", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jemo-orange focus:border-transparent"
-                placeholder={t("nameEnPlaceholder")}
-              />
-            </div>
-
-            {/* Name FR */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t("nameFr")}
-              </label>
-              <input
-                type="text"
-                value={formData.nameFr}
-                onChange={(e) => handleChange("nameFr", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jemo-orange focus:border-transparent"
-                placeholder={t("nameFrPlaceholder")}
-              />
-            </div>
-
             {/* Description */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -320,24 +320,6 @@ export default function EditProductPage({
               {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
             </div>
 
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t("category")}
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => handleChange("category", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jemo-orange focus:border-transparent"
-              >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {t(`category.${cat}`)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {/* Price */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -346,13 +328,29 @@ export default function EditProductPage({
               <input
                 type="number"
                 min="0"
-                step="0.01"
+                step="1"
                 value={formData.price}
                 onChange={(e) => handleChange("price", e.target.value)}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-jemo-orange focus:border-transparent ${errors.price ? "border-red-500" : "border-gray-300"}`}
-                placeholder="0.00"
+                placeholder="0"
               />
               {errors.price && <p className="mt-1 text-sm text-red-500">{errors.price}</p>}
+            </div>
+
+            {/* Discount Price */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Discount Price (FCFA)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={formData.discountPrice}
+                onChange={(e) => handleChange("discountPrice", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jemo-orange focus:border-transparent"
+                placeholder="Optional"
+              />
             </div>
 
             {/* Stock */}
@@ -370,6 +368,35 @@ export default function EditProductPage({
               />
             </div>
 
+            {/* Stock Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Stock Status
+              </label>
+              <select
+                value={formData.stockStatus}
+                onChange={(e) => handleChange("stockStatus", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jemo-orange focus:border-transparent"
+              >
+                <option value="IN_STOCK">In Stock</option>
+                <option value="OUT_OF_STOCK">Out of Stock</option>
+              </select>
+            </div>
+
+            {/* City */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                City
+              </label>
+              <input
+                type="text"
+                value={formData.city}
+                onChange={(e) => handleChange("city", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jemo-orange focus:border-transparent"
+                placeholder="City"
+              />
+            </div>
+
             {/* Delivery Type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -382,24 +409,47 @@ export default function EditProductPage({
               >
                 {DELIVERY_TYPES.map((type) => (
                   <option key={type} value={type}>
-                    {t(`deliveryType.${type}`)}
+                    {type === "VENDOR_DELIVERY" ? "Vendor Delivery" : "Jemo Rider"}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Active */}
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => handleChange("isActive", e.target.checked)}
-                className="rounded border-gray-300 text-jemo-orange focus:ring-jemo-orange"
-              />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-                {t("isActive")}
+            {/* Product Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Product Status
               </label>
+              <select
+                value={formData.status}
+                onChange={(e) => handleChange("status", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jemo-orange focus:border-transparent"
+              >
+                {PRODUCT_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status === "PENDING_APPROVAL" ? "Pending Review" :
+                     status === "APPROVED" ? "Approved" :
+                     status === "REJECTED" ? "Rejected" : "Suspended"}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Condition */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Condition
+              </label>
+              <select
+                value={formData.condition}
+                onChange={(e) => handleChange("condition", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jemo-orange focus:border-transparent"
+              >
+                <option value="NEW">New</option>
+                <option value="USED_LIKE_NEW">Used - Like New</option>
+                <option value="USED_GOOD">Used - Good</option>
+                <option value="REFURBISHED">Refurbished</option>
+              </select>
             </div>
           </div>
         </div>
@@ -446,7 +496,7 @@ export default function EditProductPage({
                 <input
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="1"
                   value={formData.flashSalePrice}
                   onChange={(e) => handleChange("flashSalePrice", e.target.value)}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.flashSalePrice ? "border-red-500" : "border-gray-300"}`}
@@ -501,7 +551,7 @@ export default function EditProductPage({
 
         {/* Submit Buttons */}
         <div className="flex items-center justify-end gap-4">
-          <Button type="button" variant="outline" asChild>
+          <Button type="button" variant="ghost" asChild>
             <Link href={`/${locale}/admin/products`}>{tCommon("cancel")}</Link>
           </Button>
           <Button

@@ -8,4 +8,5 @@ export { SkeletonCard, SkeletonProductGrid } from "./skeleton-card";
 export { LanguageSwitcher } from "./language-switcher";
 export { DeliveryStatusBadge } from "./delivery-status-badge";
 export { DeliveryCard, DeliveryCardSkeleton } from "./delivery-card";
+export { SignedFileLink } from "./SignedFileLink";
 

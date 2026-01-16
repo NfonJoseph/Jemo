@@ -2,19 +2,23 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Put,
   Delete,
   Param,
   Body,
   Query,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
-import { UserRole, DealType } from '@prisma/client';
+import { UserRole, DealType, ProductStatus } from '@prisma/client';
 import { AdminProductsService } from './admin-products.service';
-import { CreateProductDto, UpdateProductDto, QueryProductsDto } from './dto';
+import { CreateProductDto, UpdateProductDto, QueryProductsDto, ProductReviewDto } from './dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @Controller('admin/products')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -48,8 +52,11 @@ export class AdminProductsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.adminProductsService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() adminUser: { id: string },
+  ) {
+    return this.adminProductsService.remove(id, adminUser.id);
   }
 
   @Post('bulk/deal-type')
@@ -60,7 +67,54 @@ export class AdminProductsController {
   }
 
   @Post('bulk/delete')
-  bulkDelete(@Body() body: { ids: string[] }) {
-    return this.adminProductsService.bulkDelete(body.ids);
+  bulkDelete(
+    @Body() body: { ids: string[] },
+    @CurrentUser() adminUser: { id: string },
+  ) {
+    return this.adminProductsService.bulkDelete(body.ids, adminUser.id);
+  }
+
+  // Product approval endpoints
+  @Get('pending')
+  findPending(@Query() query: QueryProductsDto) {
+    return this.adminProductsService.findPendingProducts(query);
+  }
+
+  @Patch(':id/approve')
+  @HttpCode(HttpStatus.OK)
+  approve(
+    @Param('id') id: string,
+    @CurrentUser() adminUser: { id: string },
+  ) {
+    return this.adminProductsService.approveProduct(id, adminUser.id);
+  }
+
+  @Patch(':id/reject')
+  @HttpCode(HttpStatus.OK)
+  reject(
+    @Param('id') id: string,
+    @Body() dto: { comment: string },
+    @CurrentUser() adminUser: { id: string },
+  ) {
+    return this.adminProductsService.rejectProduct(id, dto.comment, adminUser.id);
+  }
+
+  @Patch(':id/suspend')
+  @HttpCode(HttpStatus.OK)
+  suspend(
+    @Param('id') id: string,
+    @Body() dto: { comment?: string },
+    @CurrentUser() adminUser: { id: string },
+  ) {
+    return this.adminProductsService.suspendProduct(id, dto.comment, adminUser.id);
+  }
+
+  @Patch(':id/reinstate')
+  @HttpCode(HttpStatus.OK)
+  reinstate(
+    @Param('id') id: string,
+    @CurrentUser() adminUser: { id: string },
+  ) {
+    return this.adminProductsService.reinstateProduct(id, adminUser.id);
   }
 }

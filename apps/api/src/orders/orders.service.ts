@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
-import { OrderStatus, PaymentStatus, DeliveryStatus, KycStatus } from "@prisma/client";
+import { OrderStatus, PaymentStatus, DeliveryStatus, KycStatus, ProductStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateOrderDto, PaymentMethod } from "./dto/create-order.dto";
 
@@ -17,7 +17,7 @@ export class OrdersService {
     const products = await this.prisma.product.findMany({
       where: {
         id: { in: productIds },
-        isActive: true,
+        status: ProductStatus.APPROVED,
         vendorProfile: { kycStatus: KycStatus.APPROVED },
       },
       include: { vendorProfile: true },

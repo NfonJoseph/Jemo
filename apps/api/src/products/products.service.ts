@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { KycStatus, Prisma, DealType, ProductCategory } from "@prisma/client";
+import { KycStatus, Prisma, DealType, ProductStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 export interface ProductFilters {
@@ -19,9 +19,9 @@ export class ProductsService {
     const skip = (page - 1) * limit;
     const now = new Date();
 
-    // Build where clause
+    // Build where clause - only show approved products from KYC-approved vendors
     const where: Prisma.ProductWhereInput = {
-      isActive: true,
+      status: ProductStatus.APPROVED,
       vendorProfile: {
         kycStatus: KycStatus.APPROVED,
       },
@@ -31,33 +31,13 @@ export class ProductsService {
     if (filters.q) {
       where.OR = [
         { name: { contains: filters.q, mode: "insensitive" } },
-        { nameEn: { contains: filters.q, mode: "insensitive" } },
-        { nameFr: { contains: filters.q, mode: "insensitive" } },
         { description: { contains: filters.q, mode: "insensitive" } },
       ];
     }
 
-    // Filter by category - now use enum if it matches, else search text
+    // Filter by category
     if (filters.category) {
-      const categoryUpper = filters.category.toUpperCase().replace(/-/g, "_");
-      const validCategories = Object.values(ProductCategory);
-      if (validCategories.includes(categoryUpper as ProductCategory)) {
-        where.category = categoryUpper as ProductCategory;
-      } else {
-        // Fallback: search in name/description
-        const categoryFilter = {
-          OR: [
-            { name: { contains: filters.category, mode: "insensitive" as const } },
-            { description: { contains: filters.category, mode: "insensitive" as const } },
-          ],
-        };
-        if (where.OR) {
-          where.AND = [{ OR: where.OR }, categoryFilter];
-          delete where.OR;
-        } else {
-          where.OR = categoryFilter.OR;
-        }
-      }
+      where.category = { slug: filters.category };
     }
 
     // Filter by deal type
@@ -115,13 +95,15 @@ export class ProductsService {
         select: {
           id: true,
           name: true,
-          nameEn: true,
-          nameFr: true,
           price: true,
+          discountPrice: true,
           stock: true,
-          category: true,
+          stockStatus: true,
+          city: true,
+          category: { select: { id: true, slug: true, nameEn: true, nameFr: true } },
           dealType: true,
           deliveryType: true,
+          condition: true,
           flashSalePrice: true,
           flashSaleDiscountPercent: true,
           flashSaleStartAt: true,
@@ -133,7 +115,7 @@ export class ProductsService {
             },
           },
           images: {
-            where: { isPrimary: true },
+            where: { isMain: true },
             take: 1,
             select: { url: true },
           },
@@ -149,13 +131,15 @@ export class ProductsService {
       data: products.map((p) => ({
         id: p.id,
         name: p.name,
-        nameEn: p.nameEn,
-        nameFr: p.nameFr,
         price: p.price,
+        discountPrice: p.discountPrice,
         stock: p.stock,
+        stockStatus: p.stockStatus,
+        city: p.city,
         category: p.category,
         dealType: p.dealType,
         deliveryType: p.deliveryType,
+        condition: p.condition,
         flashSalePrice: p.flashSalePrice,
         flashSaleDiscountPercent: p.flashSaleDiscountPercent,
         flashSaleStartAt: p.flashSaleStartAt,
@@ -177,7 +161,7 @@ export class ProductsService {
     const product = await this.prisma.product.findFirst({
       where: {
         id,
-        isActive: true,
+        status: ProductStatus.APPROVED,
         vendorProfile: {
           kycStatus: KycStatus.APPROVED,
         },
@@ -190,13 +174,16 @@ export class ProductsService {
             businessAddress: true,
           },
         },
+        category: true,
         images: {
           select: {
             id: true,
             url: true,
-            isPrimary: true,
+            objectKey: true,
+            isMain: true,
+            sortOrder: true,
           },
-          orderBy: { isPrimary: "desc" },
+          orderBy: [{ isMain: "desc" }, { sortOrder: "asc" }],
         },
       },
     });

@@ -55,36 +55,62 @@ enum DealType {
   FLASH_SALE
 }
 
-enum ProductCategory {
-  ELECTRONICS
-  FASHION
-  HOME_GARDEN
-  COMPUTING
-  HEALTH_BEAUTY
-  SUPERMARKET
-  BABY_KIDS
-  GAMING
-  SPORTS_OUTDOORS
-  AUTOMOTIVE
-  BOOKS_STATIONERY
-  OTHER
+enum ProductStatus {
+  PENDING_APPROVAL  // Default: awaiting admin review
+  APPROVED          // Admin approved, visible publicly
+  REJECTED          // Admin rejected with comment
+  SUSPENDED         // Temporarily suspended by admin
+}
+
+enum StockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+}
+
+enum ProductCondition {
+  NEW
+  USED_LIKE_NEW
+  USED_GOOD
+  REFURBISHED
+}
+
+enum VendorApplicationType {
+  BUSINESS
+  INDIVIDUAL
+}
+
+enum VendorApplicationStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PENDING_MANUAL_VERIFICATION
+  PENDING_KYC_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum UploadKind {
+  TAXPAYER_DOC
+  ID_FRONT
+  ID_BACK
+  SELFIE
 }
 
 model User {
   id            String         @id @default(cuid())
-  email         String         @unique
+  phone         String         @unique  // Canonical E.164 format: +237XXXXXXXXX
+  email         String?        @unique  // Optional, for notifications
   passwordHash  String
   role          UserRole
   name          String
-  phone         String?
   isActive      Boolean        @default(true)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  vendorProfile VendorProfile?
-  riderProfile  RiderProfile?
-  orders        Order[]
-  disputes      Dispute[]
+  vendorProfile       VendorProfile?
+  riderProfile        RiderProfile?
+  orders              Order[]
+  disputes            Dispute[]
+  vendorApplications  VendorApplication[]
 
   @@map("users")
 }
@@ -139,23 +165,72 @@ model KycSubmission {
   @@map("kyc_submissions")
 }
 
+// Product Categories Table
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  nameEn      String
+  nameFr      String
+  slug        String    @unique
+  description String?
+  icon        String?   // Icon name or URL
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products    Product[]
+
+  @@map("categories")
+}
+
 model Product {
   id              String          @id @default(cuid())
   vendorProfileId String
   vendorProfile   VendorProfile   @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
-  name            String
-  nameEn          String?
-  nameFr          String?
-  description     String
-  descriptionEn   String?
-  descriptionFr   String?
-  price           Decimal         @db.Decimal(10, 2)
-  stock           Int             @default(0)
-  category        ProductCategory @default(OTHER)
-  deliveryType    DeliveryType
-  isActive        Boolean         @default(true)
   
-  // Deal type and flash sale fields
+  // Basic Info
+  name            String
+  description     String
+  categoryId      String
+  category        Category        @relation(fields: [categoryId], references: [id])
+  
+  // Pricing
+  price           Decimal         @db.Decimal(10, 2)  // Selling price
+  discountPrice   Decimal?        @db.Decimal(10, 2)  // Fixed discount price (optional)
+  
+  // Stock
+  stock           Int             @default(0)
+  stockStatus     StockStatus     @default(IN_STOCK)
+  
+  // Location
+  city            String          // Product location city
+  
+  // Delivery
+  deliveryType    DeliveryType    // VENDOR_DELIVERY or JEMO_RIDER
+  
+  // Vendor Delivery Options (only if deliveryType = VENDOR_DELIVERY)
+  pickupAvailable     Boolean     @default(false)
+  localDelivery       Boolean     @default(false)
+  nationwideDelivery  Boolean     @default(false)
+  
+  // Vendor Delivery Fees (only if deliveryType = VENDOR_DELIVERY)
+  freeDelivery        Boolean     @default(false)
+  flatDeliveryFee     Decimal?    @db.Decimal(10, 2)  // If not free and flat fee
+  sameCityDeliveryFee Decimal?    @db.Decimal(10, 2)  // If varies by city
+  otherCityDeliveryFee Decimal?   @db.Decimal(10, 2)  // If varies by city
+  
+  // Condition & Authenticity
+  condition           ProductCondition @default(NEW)
+  authenticityConfirmed Boolean    @default(false)
+  
+  // Status & Approval
+  status          ProductStatus   @default(PENDING_APPROVAL)
+  rejectionReason String?         // Admin rejection comment
+  reviewedAt      DateTime?       // When admin reviewed
+  reviewedById    String?         // Admin user ID who reviewed
+  
+  // Deal type and flash sale fields (admin controlled)
   dealType                DealType  @default(TODAYS_DEAL)
   flashSalePrice          Decimal?  @db.Decimal(10, 2)
   flashSaleDiscountPercent Int?
@@ -172,14 +247,30 @@ model Product {
 }
 
 model ProductImage {
-  id        String   @id @default(cuid())
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  url       String
-  isPrimary Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  objectKey   String   // R2 object key: products/{vendorId}/{productId}/{uuid}.{ext}
+  url         String   // Public/signed URL
+  mimeType    String
+  size        Int      // File size in bytes
+  sortOrder   Int      @default(0)  // For reordering
+  isMain      Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   @@map("product_images")
+}
+
+// Admin Settings for Jemo Delivery Pricing
+model AdminSettings {
+  id                  String   @id @default(cuid())
+  key                 String   @unique
+  value               String   // JSON string for complex values
+  description         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("admin_settings")
 }
 
 model Order {
@@ -215,18 +306,47 @@ model OrderItem {
 }
 
 model Payment {
-  id            String        @id @default(cuid())
-  orderId       String        @unique
-  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  amount        Decimal       @db.Decimal(10, 2)
-  status        PaymentStatus @default(INITIATED)
-  paymentMethod String
-  transactionId String?
-  paidAt        DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                  String        @id @default(cuid())
+  orderId             String        @unique
+  order               Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount              Decimal       @db.Decimal(10, 2)
+  currency            String        @default("XAF")
+  status              PaymentStatus @default(INITIATED)
+  paymentMethod       String        // MTN_MOBILE_MONEY, ORANGE_MONEY, COD
+  provider            String?       // MYCOOLPAY, etc.
+  appTransactionRef   String?       @unique  // Our unique idempotent reference
+  providerTransactionId String?     // Provider's transaction ID
+  providerResponse    String?       // JSON string of provider response
+  failureReason       String?       // Error details if failed
+  webhookReceivedAt   DateTime?     // When we received webhook confirmation
+  paidAt              DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
   @@map("payments")
+}
+
+// Fee payments (vendor application, etc.)
+model FeePayment {
+  id                    String        @id @default(cuid())
+  userId                String
+  purpose               String        // VENDOR_APPLICATION_FEE, RIDER_APPLICATION_FEE, etc.
+  applicationId         String?       // Reference to VendorApplication or RiderApplication
+  amount                Decimal       @db.Decimal(10, 2)
+  currency              String        @default("XAF")
+  status                PaymentStatus @default(INITIATED)
+  paymentMethod         String        // MTN_MOBILE_MONEY, ORANGE_MONEY
+  provider              String?       // MYCOOLPAY
+  appTransactionRef     String        @unique  // Our unique idempotent reference
+  providerTransactionId String?       // Provider's transaction ID
+  providerResponse      String?       // JSON string of provider response
+  failureReason         String?       // Error details if failed
+  webhookReceivedAt     DateTime?     // When we received webhook confirmation
+  paidAt                DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@map("fee_payments")
 }
 
 model Delivery {
@@ -259,4 +379,60 @@ model Dispute {
   updatedAt   DateTime @updatedAt
 
   @@map("disputes")
+}
+
+// =============================================
+// VENDOR APPLICATION (Multi-step wizard)
+// =============================================
+
+model VendorApplication {
+  id                    String                   @id @default(cuid())
+  userId                String
+  user                  User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type                  VendorApplicationType
+  status                VendorApplicationStatus  @default(DRAFT)
+  
+  // Business path fields
+  businessName          String?
+  businessAddress       String?
+  businessPhone         String?                  // Normalized +237XXXXXXXXX
+  businessEmail         String?
+  
+  // Individual path fields
+  fullNameOnId          String?
+  location              String?
+  phoneNormalized       String?                  // Normalized +237XXXXXXXXX
+  
+  // Payment tracking
+  applicationFeePaid    Boolean                  @default(false)
+  feePaymentId          String?                  // Reference to Payment record
+  paymentRef            String?                  // Transaction reference
+  paidAt                DateTime?
+  
+  // Admin review
+  rejectionReason       String?
+  reviewedAt            DateTime?
+  reviewedBy            String?                  // Admin user ID
+  
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  
+  uploads               VendorApplicationUpload[]
+  
+  @@map("vendor_applications")
+}
+
+model VendorApplicationUpload {
+  id              String            @id @default(cuid())
+  applicationId   String
+  application     VendorApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  kind            UploadKind
+  storagePath     String            // Local path or S3 key
+  originalName    String
+  mimeType        String
+  size            Int               // File size in bytes
+  createdAt       DateTime          @default(now())
+  
+  @@unique([applicationId, kind])  // One file per kind per application
+  @@map("vendor_application_uploads")
 }

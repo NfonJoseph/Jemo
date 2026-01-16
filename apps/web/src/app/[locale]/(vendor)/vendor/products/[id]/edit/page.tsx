@@ -4,14 +4,82 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
-import type { UpdateProductPayload, VendorProduct } from "@/lib/types";
+import type { UpdateProductPayload, VendorProduct, ProductImage, ProductImagePayload } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toaster";
 import { EmptyState } from "@/components/shared";
-import { ChevronLeft, Loader2, ImagePlus } from "lucide-react";
+import { ChevronLeft, Loader2, ImagePlus, Trash2, Star, GripVertical, Plus, X } from "lucide-react";
+
+// Image interface for form state
+interface FormImage {
+  id?: string;
+  objectKey: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  sortOrder: number;
+  isMain: boolean;
+  isNew?: boolean; // Track if image was newly added
+}
+
+// Helper to extract object key from URL
+function extractKeyFromUrl(url: string): string {
+  if (!url) return "";
+  try {
+    const urlObj = new URL(url);
+    // Get path without leading slash
+    return urlObj.pathname.replace(/^\//, "") || `url-${Date.now()}`;
+  } catch {
+    // If not a valid URL, use hash
+    return `url-${url.substring(0, 20).replace(/[^a-zA-Z0-9]/g, "")}-${Date.now()}`;
+  }
+}
+
+// Convert ProductImage from API to FormImage
+function toFormImage(img: ProductImage, index: number): FormImage {
+  return {
+    id: img.id,
+    objectKey: img.objectKey || extractKeyFromUrl(img.url),
+    url: img.url || "",
+    mimeType: "image/jpeg",
+    size: 0,
+    sortOrder: img.sortOrder ?? index,
+    isMain: Boolean(img.isMain),
+    isNew: false,
+  };
+}
+
+/**
+ * Convert FormImage to ProductImagePayload for API
+ * ONLY include fields accepted by backend: objectKey, url, sortOrder, isMain
+ * Do NOT include mimeType, size, id, etc. - they will cause validation errors
+ */
+function toImagePayload(img: FormImage, index: number): ProductImagePayload {
+  return {
+    objectKey: img.objectKey || extractKeyFromUrl(img.url),
+    url: img.url,
+    sortOrder: index,
+    isMain: Boolean(img.isMain),
+  };
+}
+
+// Default form state to prevent uncontrolled->controlled warnings
+function getDefaultFormState() {
+  return {
+    name: "",
+    description: "",
+    price: "",
+    stock: "",
+    stockStatus: "IN_STOCK" as "IN_STOCK" | "OUT_OF_STOCK",
+    deliveryType: "VENDOR_DELIVERY" as "VENDOR_DELIVERY" | "JEMO_RIDER",
+    categoryId: "",
+    city: "",
+    condition: "NEW" as "NEW" | "USED_LIKE_NEW" | "USED_GOOD" | "REFURBISHED",
+  };
+}
 
 export default function EditProductPage() {
   const params = useParams();
@@ -23,14 +91,14 @@ export default function EditProductPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [form, setForm] = useState({
-    name: "",
-    description: "",
-    price: "",
-    stock: "",
-    deliveryType: "VENDOR_DELIVERY" as "VENDOR_DELIVERY" | "JEMO_RIDER",
-    imageUrl: "",
-  });
+  // Form state - initialized with safe defaults
+  const [form, setForm] = useState(getDefaultFormState);
+  
+  // Images state - always an array of FormImage objects
+  const [images, setImages] = useState<FormImage[]>([]);
+  
+  // New image URL input
+  const [newImageUrl, setNewImageUrl] = useState("");
 
   useEffect(() => {
     async function fetchProduct() {
@@ -40,24 +108,41 @@ export default function EditProductPage() {
 
         if (found) {
           setProduct(found);
+          
+          // Hydrate form with safe coercion
           setForm({
-            name: found.name,
-            description: found.description,
-            price: found.price.toString(),
-            stock: found.stock.toString(),
-            deliveryType: found.deliveryType,
-            imageUrl: found.images?.[0]?.url || "",
+            name: String(found.name ?? ""),
+            description: String(found.description ?? ""),
+            price: found.price != null ? String(found.price) : "",
+            stock: found.stock != null ? String(found.stock) : "0",
+            stockStatus: (found.stockStatus as "IN_STOCK" | "OUT_OF_STOCK") || "IN_STOCK",
+            deliveryType: (found.deliveryType as "VENDOR_DELIVERY" | "JEMO_RIDER") || "VENDOR_DELIVERY",
+            categoryId: "", // Will be set if available
+            city: "",
+            condition: (found.condition as typeof form.condition) || "NEW",
           });
+          
+          // Map images to FormImage objects
+          const productImages = found.images || [];
+          const mappedImages = productImages.map((img, index) => toFormImage(img, index));
+          
+          // Ensure exactly one image is marked as main
+          if (mappedImages.length > 0 && !mappedImages.some(img => img.isMain)) {
+            mappedImages[0].isMain = true;
+          }
+          
+          setImages(mappedImages);
         }
       } catch (err) {
         console.error("Failed to fetch product:", err);
+        toast.error("Failed to load product");
       } finally {
         setLoading(false);
       }
     }
 
     fetchProduct();
-  }, [params.id]);
+  }, [params.id, toast]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -65,6 +150,91 @@ export default function EditProductPage() {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  // Add new image from URL
+  const handleAddImage = () => {
+    const url = newImageUrl.trim();
+    if (!url) {
+      toast.error("Please enter an image URL");
+      return;
+    }
+    
+    if (images.length >= 15) {
+      toast.error("Maximum 15 images allowed");
+      return;
+    }
+    
+    const newImage: FormImage = {
+      objectKey: extractKeyFromUrl(url),
+      url: url,
+      mimeType: "image/jpeg",
+      size: 0,
+      sortOrder: images.length,
+      isMain: images.length === 0, // First image is main by default
+      isNew: true,
+    };
+    
+    setImages((prev) => [...prev, newImage]);
+    setNewImageUrl("");
+    setErrors((prev) => ({ ...prev, images: "" }));
+  };
+
+  // Remove image
+  const handleRemoveImage = (index: number) => {
+    setImages((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      
+      // Re-assign sortOrder
+      updated.forEach((img, i) => {
+        img.sortOrder = i;
+      });
+      
+      // If removed image was main, set first as main
+      if (updated.length > 0 && !updated.some(img => img.isMain)) {
+        updated[0].isMain = true;
+      }
+      
+      return updated;
+    });
+  };
+
+  // Set image as main
+  const handleSetMain = (index: number) => {
+    setImages((prev) =>
+      prev.map((img, i) => ({
+        ...img,
+        isMain: i === index,
+      }))
+    );
+  };
+
+  // Move image up
+  const handleMoveUp = (index: number) => {
+    if (index === 0) return;
+    setImages((prev) => {
+      const updated = [...prev];
+      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+      // Re-assign sortOrder
+      updated.forEach((img, i) => {
+        img.sortOrder = i;
+      });
+      return updated;
+    });
+  };
+
+  // Move image down
+  const handleMoveDown = (index: number) => {
+    if (index >= images.length - 1) return;
+    setImages((prev) => {
+      const updated = [...prev];
+      [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+      // Re-assign sortOrder
+      updated.forEach((img, i) => {
+        img.sortOrder = i;
+      });
+      return updated;
+    });
   };
 
   const validate = (): boolean => {
@@ -88,8 +258,10 @@ export default function EditProductPage() {
       newErrors.stock = "Enter a valid stock quantity";
     }
 
-    if (!form.imageUrl.trim()) {
-      newErrors.imageUrl = "Image URL is required";
+    if (images.length === 0) {
+      newErrors.images = "At least one image is required";
+    } else if (!images.some(img => img.isMain)) {
+      newErrors.images = "Please select a main image";
     }
 
     setErrors(newErrors);
@@ -103,13 +275,16 @@ export default function EditProductPage() {
 
     setSubmitting(true);
 
+    // Build payload with properly typed images
     const payload: UpdateProductPayload = {
       name: form.name.trim(),
       description: form.description.trim(),
       price: Math.round(parseFloat(form.price)),
       stock: parseInt(form.stock, 10),
+      stockStatus: form.stockStatus,
       deliveryType: form.deliveryType,
-      images: [form.imageUrl.trim()],
+      // Map images to the expected payload format
+      images: images.map((img, index) => toImagePayload(img, index)),
     };
 
     try {
@@ -117,14 +292,15 @@ export default function EditProductPage() {
       toast.success("Product updated successfully!");
       router.push("/vendor/products");
     } catch (err) {
+      console.error("Failed to update product:", err);
       if (err instanceof ApiError) {
-        const data = err.data as { message?: string | string[] };
+        const data = err.data as { message?: string | string[]; error?: string };
         const message = Array.isArray(data?.message)
-          ? data.message[0]
-          : data?.message;
+          ? data.message.join(", ")
+          : data?.message || data?.error;
         toast.error(message || "Failed to update product");
       } else {
-        toast.error("Something went wrong");
+        toast.error("Something went wrong. Please try again.");
       }
     } finally {
       setSubmitting(false);
@@ -248,6 +424,21 @@ export default function EditProductPage() {
           </div>
         </div>
 
+        {/* Stock Status */}
+        <div className="space-y-2">
+          <Label htmlFor="stockStatus">Stock Status</Label>
+          <select
+            id="stockStatus"
+            name="stockStatus"
+            value={form.stockStatus}
+            onChange={handleChange}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="IN_STOCK">In Stock</option>
+            <option value="OUT_OF_STOCK">Out of Stock</option>
+          </select>
+        </div>
+
         {/* Delivery Type */}
         <div className="space-y-2">
           <Label htmlFor="deliveryType">Delivery Type</Label>
@@ -263,41 +454,139 @@ export default function EditProductPage() {
           </select>
         </div>
 
-        {/* Image URL */}
+        {/* Condition */}
         <div className="space-y-2">
-          <Label htmlFor="imageUrl">Product Image URL *</Label>
+          <Label htmlFor="condition">Condition</Label>
+          <select
+            id="condition"
+            name="condition"
+            value={form.condition}
+            onChange={handleChange}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="NEW">New</option>
+            <option value="USED_LIKE_NEW">Used - Like New</option>
+            <option value="USED_GOOD">Used - Good</option>
+            <option value="REFURBISHED">Refurbished</option>
+          </select>
+        </div>
+
+        {/* Product Images */}
+        <div className="space-y-4">
+          <Label>Product Images *</Label>
+          
+          {/* Add new image */}
           <div className="flex gap-2">
-            <div className="flex-1">
-              <Input
-                id="imageUrl"
-                name="imageUrl"
-                value={form.imageUrl}
-                onChange={handleChange}
-                placeholder="https://example.com/image.jpg"
-                className={errors.imageUrl ? "border-red-500" : ""}
-              />
-            </div>
-            <div className="w-16 h-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-              {form.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={form.imageUrl}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
-              ) : (
-                <ImagePlus className="w-5 h-5 text-gray-400" />
-              )}
-            </div>
+            <Input
+              value={newImageUrl}
+              onChange={(e) => setNewImageUrl(e.target.value)}
+              placeholder="https://example.com/image.jpg"
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleAddImage}
+              disabled={images.length >= 15}
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Add
+            </Button>
           </div>
-          {errors.imageUrl && (
-            <p className="text-sm text-red-500">{errors.imageUrl}</p>
+          
+          {errors.images && (
+            <p className="text-sm text-red-500">{errors.images}</p>
           )}
+          
+          {/* Image list */}
+          {images.length > 0 ? (
+            <div className="space-y-2">
+              {images.map((img, index) => (
+                <div
+                  key={img.objectKey + index}
+                  className={`flex items-center gap-3 p-3 rounded-lg border ${
+                    img.isMain ? "border-jemo-orange bg-orange-50" : "border-gray-200 bg-white"
+                  }`}
+                >
+                  {/* Reorder controls */}
+                  <div className="flex flex-col gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleMoveUp(index)}
+                      disabled={index === 0}
+                      className="text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                    >
+                      <GripVertical className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  {/* Image preview */}
+                  <div className="w-16 h-16 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                    {img.url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={img.url}
+                        alt={`Product image ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImagePlus className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Image info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-600 truncate">{img.url}</p>
+                    {img.isMain && (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-jemo-orange">
+                        <Star className="w-3 h-3 fill-current" />
+                        Main Image
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    {!img.isMain && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSetMain(index)}
+                        title="Set as main image"
+                      >
+                        <Star className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveImage(index)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      title="Remove image"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 border-2 border-dashed border-gray-200 rounded-lg text-center">
+              <ImagePlus className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+              <p className="text-sm text-gray-500">No images added yet</p>
+              <p className="text-xs text-gray-400">Add image URLs above</p>
+            </div>
+          )}
+          
           <p className="text-xs text-gray-500">
-            Paste a direct link to your product image
+            {images.length}/15 images. Click the star to set the main image.
           </p>
         </div>
 
@@ -305,7 +594,7 @@ export default function EditProductPage() {
         <div className="flex gap-3 pt-4">
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             className="flex-1"
             onClick={() => router.back()}
             disabled={submitting}
@@ -331,4 +620,3 @@ export default function EditProductPage() {
     </div>
   );
 }
-

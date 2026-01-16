@@ -5,12 +5,51 @@ import Link from "next/link";
 import Image from "next/image";
 import { api, ApiError } from "@/lib/api";
 import { formatPrice } from "@/lib/utils";
-import type { VendorProduct } from "@/lib/types";
+import type { VendorProduct, ProductStatus } from "@/lib/types";
 import { EmptyState } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toaster";
-import { Plus, Pencil, Trash2, Package, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, AlertTriangle, Clock, CheckCircle, XCircle, Ban } from "lucide-react";
+
+// Status badge component for product status
+function StatusBadge({ status }: { status: ProductStatus }) {
+  const config: Record<ProductStatus, { bg: string; text: string; icon: React.ReactNode; label: string }> = {
+    PENDING_APPROVAL: {
+      bg: "bg-yellow-100",
+      text: "text-yellow-700",
+      icon: <Clock className="w-3 h-3" />,
+      label: "Pending Review",
+    },
+    APPROVED: {
+      bg: "bg-green-100",
+      text: "text-green-700",
+      icon: <CheckCircle className="w-3 h-3" />,
+      label: "Approved",
+    },
+    REJECTED: {
+      bg: "bg-red-100",
+      text: "text-red-700",
+      icon: <XCircle className="w-3 h-3" />,
+      label: "Rejected",
+    },
+    SUSPENDED: {
+      bg: "bg-gray-100",
+      text: "text-gray-700",
+      icon: <Ban className="w-3 h-3" />,
+      label: "Suspended",
+    },
+  };
+
+  const { bg, text, icon, label } = config[status] || config.PENDING_APPROVAL;
+
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${bg} ${text}`}>
+      {icon}
+      {label}
+    </span>
+  );
+}
 
 export default function VendorProductsPage() {
   const [products, setProducts] = useState<VendorProduct[]>([]);
@@ -138,16 +177,14 @@ export default function VendorProductsPage() {
                     <Package className="w-4 h-4" />
                     Stock: {product.stock}
                   </span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      product.isActive
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {product.isActive ? "Active" : "Inactive"}
-                  </span>
+                  <StatusBadge status={product.status} />
                 </div>
+                {product.status === "REJECTED" && product.rejectionReason && (
+                  <div className="mt-2 flex items-start gap-2 text-sm text-red-600 bg-red-50 p-2 rounded">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>{product.rejectionReason}</span>
+                  </div>
+                )}
               </div>
 
               {/* Actions */}

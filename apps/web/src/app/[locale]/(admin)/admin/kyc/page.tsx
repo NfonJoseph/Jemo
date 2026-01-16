@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { AdminKycSubmission, KycStatus } from "@/lib/types";
-import { StatusBadge, EmptyState } from "@/components/shared";
+import { StatusBadge, EmptyState, SignedFileLink } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toaster";
@@ -136,6 +136,28 @@ export default function AdminKycPage() {
   ];
 
   const getSubmissionInfo = (submission: AdminKycSubmission) => {
+    // Check if this is a vendor application (from new wizard flow)
+    if (submission.vendorApplication) {
+      const app = submission.vendorApplication;
+      const name = app.businessName || app.fullNameOnId || app.user?.name || "Unknown Applicant";
+      const type = app.type === "BUSINESS" ? "Business Vendor" : "Individual Vendor";
+      const contact = app.businessPhone || app.phoneNormalized || app.user?.phone || app.user?.email || "N/A";
+      const location = app.businessAddress || app.location || "";
+      
+      return { 
+        isVendor: true, 
+        isVendorApplication: true,
+        name, 
+        type, 
+        TypeIcon: Store, 
+        contact, 
+        user: app.user,
+        location,
+        uploads: app.uploads,
+      };
+    }
+
+    // Original logic for KycSubmission
     const isVendor = !!submission.vendorProfileId;
     const user = isVendor
       ? submission.vendorProfile?.user
@@ -147,7 +169,7 @@ export default function AdminKycPage() {
     const TypeIcon = isVendor ? Store : Bike;
     const contact = user?.phone || user?.email || "N/A";
 
-    return { isVendor, name, type, TypeIcon, contact, user };
+    return { isVendor, isVendorApplication: false, name, type, TypeIcon, contact, user };
   };
 
   const formatDate = (dateString: string | null | undefined) => {
@@ -206,8 +228,12 @@ export default function AdminKycPage() {
       ) : (
         <div className="space-y-4">
           {submissions.map((submission) => {
-            const { isVendor, name, type, TypeIcon, contact } = getSubmissionInfo(submission);
+            const info = getSubmissionInfo(submission);
+            const { isVendor, isVendorApplication, name, type, TypeIcon, contact } = info;
             const normalizedStatus = normalizeKycStatus(submission.status);
+
+            // Get uploads for vendor applications
+            const uploads = submission.vendorApplication?.uploads || [];
 
             return (
               <div
@@ -223,12 +249,23 @@ export default function AdminKycPage() {
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-gray-900">{name}</p>
                         <StatusBadge status={normalizedStatus} />
+                        {isVendorApplication && (
+                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                            New Application
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-gray-500">
                         {type} • {contact}
                       </p>
+                      {submission.vendorApplication?.location && (
+                        <p className="text-sm text-gray-500">
+                          Location: {submission.vendorApplication.location}
+                        </p>
+                      )}
                       <p className="text-sm text-gray-500">
                         Document: {submission.documentType}
+                        {uploads.length > 0 && ` (${uploads.length} files)`}
                       </p>
                       <p className="text-xs text-gray-400">
                         Submitted: {formatDate(submission.createdAt)}
@@ -238,11 +275,25 @@ export default function AdminKycPage() {
                           Reason: {submission.reviewNotes}
                         </p>
                       )}
+                      
+                      {/* Show uploaded documents for vendor applications */}
+                      {uploads.length > 0 && submission.vendorApplication && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {uploads.map((upload) => (
+                            <SignedFileLink
+                              key={upload.id}
+                              applicationId={submission.vendorApplication!.id}
+                              kind={upload.kind}
+                              label={`${upload.kind}: ${upload.originalFileName}`}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {submission.documentUrl && (
+                    {submission.documentUrl && !isVendorApplication && (
                       <Button
                         variant="outline"
                         size="sm"

@@ -1,9 +1,21 @@
-import { IsString, IsNumber, IsOptional, IsBoolean, IsEnum, IsInt, Min, Max, IsArray, ValidateIf, IsDateString } from 'class-validator';
-import { DealType, DeliveryType, ProductCategory } from '@prisma/client';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+  IsArray,
+  ValidateIf,
+  IsDateString,
+  ValidateNested,
+} from 'class-validator';
+import { DealType, DeliveryType, ProductCondition, ProductStatus, StockStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
+import { AdminProductImageDto } from './create-product.dto';
 
-// Manually define UpdateProductDto instead of using PartialType
-// This avoids the @nestjs/mapped-types dependency issue
 export class UpdateProductDto {
   @IsString()
   @IsOptional()
@@ -11,29 +23,23 @@ export class UpdateProductDto {
 
   @IsString()
   @IsOptional()
-  nameEn?: string;
-
-  @IsString()
-  @IsOptional()
-  nameFr?: string;
-
-  @IsString()
-  @IsOptional()
   description?: string;
 
   @IsString()
   @IsOptional()
-  descriptionEn?: string;
-
-  @IsString()
-  @IsOptional()
-  descriptionFr?: string;
+  categoryId?: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
   @Type(() => Number)
   @Min(0)
-  @IsOptional()
   price?: number;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  discountPrice?: number | null;
 
   @IsInt()
   @IsOptional()
@@ -41,9 +47,13 @@ export class UpdateProductDto {
   @Type(() => Number)
   stock?: number;
 
-  @IsEnum(ProductCategory)
+  @IsEnum(StockStatus)
   @IsOptional()
-  category?: ProductCategory;
+  stockStatus?: StockStatus;
+
+  @IsString()
+  @IsOptional()
+  city?: string;
 
   @IsEnum(DeliveryType)
   @IsOptional()
@@ -51,9 +61,47 @@ export class UpdateProductDto {
 
   @IsBoolean()
   @IsOptional()
-  isActive?: boolean;
+  pickupAvailable?: boolean;
 
-  // Deal type fields
+  @IsBoolean()
+  @IsOptional()
+  localDelivery?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  nationwideDelivery?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  freeDelivery?: boolean;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  flatDeliveryFee?: number | null;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  sameCityDeliveryFee?: number | null;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  otherCityDeliveryFee?: number | null;
+
+  @IsEnum(ProductCondition)
+  @IsOptional()
+  condition?: ProductCondition;
+
+  @IsBoolean()
+  @IsOptional()
+  authenticityConfirmed?: boolean;
+
+  @IsEnum(ProductStatus)
+  @IsOptional()
+  status?: ProductStatus;
+
   @IsEnum(DealType)
   @IsOptional()
   dealType?: DealType;
@@ -61,25 +109,27 @@ export class UpdateProductDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsOptional()
   @Type(() => Number)
-  flashSalePrice?: number;
+  @ValidateIf((o) => o.dealType === DealType.FLASH_SALE)
+  flashSalePrice?: number | null;
 
   @IsInt()
   @IsOptional()
   @Min(1)
   @Max(90)
   @Type(() => Number)
-  flashSaleDiscountPercent?: number;
+  flashSaleDiscountPercent?: number | null;
 
   @IsDateString()
   @IsOptional()
-  flashSaleStartAt?: string;
+  flashSaleStartAt?: string | null;
 
   @IsDateString()
   @IsOptional()
-  flashSaleEndAt?: string;
+  flashSaleEndAt?: string | null;
 
   @IsArray()
-  @IsString({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => AdminProductImageDto)
   @IsOptional()
-  imageUrls?: string[];
+  images?: AdminProductImageDto[];
 }

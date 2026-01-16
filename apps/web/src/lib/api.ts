@@ -121,6 +121,79 @@ async function request<T>(
   }
 }
 
+/**
+ * Upload a file using multipart/form-data
+ */
+async function uploadFile<T>(
+  endpoint: string,
+  formData: FormData,
+  auth = false
+): Promise<T> {
+  const requestHeaders: Record<string, string> = {
+    // Don't set Content-Type - browser sets it with boundary for multipart
+    Accept: "application/json",
+  };
+
+  if (auth) {
+    const token = getToken();
+    if (token) {
+      requestHeaders["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
+  const url = `${API_URL}${endpoint}`;
+  if (isDev) {
+    console.log(`[API] UPLOAD ${url}`);
+    console.log(`[API] FormData fields:`, Array.from(formData.keys()));
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: requestHeaders,
+      body: formData,
+    });
+
+    const rawText = await response.text();
+    
+    if (isDev) {
+      console.log(`[API] Upload response status: ${response.status}`);
+      console.log(`[API] Upload response body:`, rawText.substring(0, 500));
+    }
+
+    if (!response.ok) {
+      let errorData: unknown = null;
+      try {
+        errorData = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        errorData = { message: rawText || response.statusText };
+      }
+
+      if (isDev) {
+        console.error(`[API] Upload error ${response.status}:`, errorData);
+      }
+
+      throw new ApiError(response.status, response.statusText, errorData, rawText);
+    }
+
+    if (response.status === 204 || !rawText) {
+      return {} as T;
+    }
+
+    try {
+      return JSON.parse(rawText);
+    } catch {
+      throw new ApiError(500, "Invalid JSON response", { message: "Server returned invalid JSON" }, rawText);
+    }
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    if (isDev) {
+      console.error(`[API] Upload network error:`, err);
+    }
+    throw new ApiError(0, "Network Error", { message: "Failed to connect to server" });
+  }
+}
+
 export const api = {
   get: <T>(endpoint: string, auth = false) =>
     request<T>(endpoint, { method: "GET", auth }),
@@ -136,6 +209,15 @@ export const api = {
 
   delete: <T>(endpoint: string, auth = false) =>
     request<T>(endpoint, { method: "DELETE", auth }),
+
+  /**
+   * Upload a file using multipart/form-data
+   * @param endpoint - API endpoint
+   * @param formData - FormData with file(s)
+   * @param auth - Whether to include auth token
+   */
+  upload: <T>(endpoint: string, formData: FormData, auth = false) =>
+    uploadFile<T>(endpoint, formData, auth),
 };
 
 export { ApiError };

@@ -18,6 +18,7 @@ import {
   Menu,
   X,
   Package,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations, useLocale } from "@/lib/translations";
@@ -35,6 +36,7 @@ export default function AdminLayout({
 
   const ADMIN_NAV = [
     { label: t("nav.dashboard"), href: `/${locale}/admin`, icon: Home },
+    { label: "Users", href: `/${locale}/admin/users`, icon: Users },
     { label: t("nav.products"), href: `/${locale}/admin/products`, icon: Package },
     { label: t("nav.kyc"), href: `/${locale}/admin/kyc`, icon: FileCheck },
     { label: t("nav.orders"), href: `/${locale}/admin/orders`, icon: ShoppingBag },

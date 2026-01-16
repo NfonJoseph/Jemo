@@ -40,6 +40,12 @@ export type DeliveryType = "VENDOR_DELIVERY" | "JEMO_RIDER";
 
 export type DisputeStatus = "OPEN" | "RESOLVED" | "REJECTED";
 
+export type ProductStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "SUSPENDED";
+
+export type StockStatus = "IN_STOCK" | "OUT_OF_STOCK";
+
+export type ProductCondition = "NEW" | "USED_LIKE_NEW" | "USED_GOOD" | "REFURBISHED";
+
 export interface User {
   id: string;
   email: string;
@@ -55,8 +61,12 @@ export interface Product {
   description: string;
   price: string;
   stock: number;
+  stockStatus: StockStatus;
   deliveryType: DeliveryType;
-  isActive: boolean;
+  status: ProductStatus;
+  condition: ProductCondition;
+  rejectionReason?: string | null;
+  reviewedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   images?: ProductImage[];
@@ -69,7 +79,11 @@ export interface Product {
 export interface ProductImage {
   id: string;
   url: string;
-  isPrimary: boolean;
+  objectKey?: string;
+  mimeType?: string;
+  size?: number;
+  isMain: boolean;
+  sortOrder?: number;
 }
 
 export interface Order {
@@ -170,8 +184,12 @@ export interface VendorProduct {
   description: string;
   price: string;
   stock: number;
+  stockStatus: StockStatus;
   deliveryType: DeliveryType;
-  isActive: boolean;
+  status: ProductStatus;
+  condition: ProductCondition;
+  rejectionReason?: string | null;
+  reviewedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   images?: ProductImage[];
@@ -216,6 +234,7 @@ export interface KycResponse {
     documentUrl: string;
     status: KycStatus;
     createdAt: string;
+    reviewNotes?: string | null;
   } | null;
 }
 
@@ -228,13 +247,28 @@ export interface CreateProductPayload {
   images?: string[];
 }
 
+/**
+ * Payload for updating product images
+ * Only includes fields accepted by the backend (no mimeType/size)
+ */
+export interface ProductImagePayload {
+  objectKey: string;
+  url: string;
+  sortOrder: number;
+  isMain: boolean;
+}
+
 export interface UpdateProductPayload {
   name?: string;
   description?: string;
   price?: number;
   stock?: number;
+  stockStatus?: StockStatus;
   deliveryType?: DeliveryType;
-  images?: string[];
+  categoryId?: string;
+  city?: string;
+  condition?: ProductCondition;
+  images?: ProductImagePayload[];
 }
 
 // Rider types
@@ -287,6 +321,7 @@ export interface AdminKycSubmission {
   id: string;
   vendorProfileId: string | null;
   riderProfileId: string | null;
+  vendorApplicationId?: string; // For new vendor application flow
   status: KycStatus;
   documentType: string;
   documentUrl: string;
@@ -308,6 +343,33 @@ export interface AdminKycSubmission {
     vehicleType: string;
     licensePlate: string | null;
     user?: {
+      id: string;
+      name: string;
+      phone: string | null;
+      email: string;
+      role: UserRole;
+    };
+  };
+  // New vendor application data (from wizard flow)
+  vendorApplication?: {
+    id: string;
+    type: "BUSINESS" | "INDIVIDUAL";
+    status: string;
+    businessName: string | null;
+    businessAddress: string | null;
+    businessPhone: string | null;
+    businessEmail: string | null;
+    fullNameOnId: string | null;
+    location: string | null;
+    phoneNormalized: string | null;
+    uploads: Array<{
+      id: string;
+      kind: string;
+      storagePath: string;
+      mimeType: string;
+      originalFileName: string;
+    }>;
+    user: {
       id: string;
       name: string;
       phone: string | null;

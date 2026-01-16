@@ -11,6 +11,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { UpgradeRoleDto } from "./dto/upgrade-role.dto";
+import { normalizeCameroonPhone } from "../common/utils/phone";
 
 @Injectable()
 export class AuthService {
@@ -25,9 +26,16 @@ export class AuthService {
       throw new BadRequestException("Admin registration is not allowed");
     }
 
-    // Check for duplicate phone
-    const existingPhone = await this.prisma.user.findFirst({
-      where: { phone: dto.phone },
+    // Normalize and validate phone number
+    const phoneResult = normalizeCameroonPhone(dto.phone);
+    if (!phoneResult.valid) {
+      throw new BadRequestException(phoneResult.error || "Invalid phone number");
+    }
+    const normalizedPhone = phoneResult.normalized!;
+
+    // Check for duplicate phone (using normalized value)
+    const existingPhone = await this.prisma.user.findUnique({
+      where: { phone: normalizedPhone },
     });
     if (existingPhone) {
       throw new ConflictException("Phone number already registered");
@@ -64,8 +72,8 @@ export class AuthService {
     const user = await this.prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
-          email: dto.email || `${dto.phone}@placeholder.jemo`,
-          phone: dto.phone,
+          phone: normalizedPhone, // Store canonical format
+          email: dto.email || null, // Email is optional now
           passwordHash,
           name: dto.name,
           role: dto.role,
@@ -110,17 +118,21 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    if (!dto.phone && !dto.email) {
-      throw new BadRequestException("Phone or email is required");
+    // Phone is now required for login
+    if (!dto.phone) {
+      throw new BadRequestException("Phone number is required");
     }
 
-    const user = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          dto.phone ? { phone: dto.phone } : {},
-          dto.email ? { email: dto.email } : {},
-        ].filter((c) => Object.keys(c).length > 0),
-      },
+    // Normalize the phone input for lookup
+    const phoneResult = normalizeCameroonPhone(dto.phone);
+    if (!phoneResult.valid) {
+      throw new BadRequestException(phoneResult.error || "Invalid phone number");
+    }
+    const normalizedPhone = phoneResult.normalized!;
+
+    // Find user by normalized phone
+    const user = await this.prisma.user.findUnique({
+      where: { phone: normalizedPhone },
     });
 
     if (!user) {
@@ -243,4 +255,3 @@ export class AuthService {
     return this.jwtService.sign({ sub: userId, role });
   }
 }
-

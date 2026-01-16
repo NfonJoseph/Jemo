@@ -1,253 +1,365 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, ApiError } from "@/lib/api";
+import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { useTranslations, useLocale } from "@/lib/translations";
 import { useAuth } from "@/lib/auth-context";
-import { setUser } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toaster";
-import { ChevronLeft, Loader2, Store } from "lucide-react";
+import { api, ApiError } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface VendorApplyResponse {
-  user: {
+// Step Components
+import { TypeSelectionStep } from "./steps/TypeSelectionStep";
+import { FeeStep } from "./steps/FeeStep";
+import { BusinessDetailsStep } from "./steps/BusinessDetailsStep";
+import { IndividualDetailsStep } from "./steps/IndividualDetailsStep";
+import { KycPrepStep } from "./steps/KycPrepStep";
+import { CaptureStep } from "./steps/CaptureStep";
+import { ReviewStep } from "./steps/ReviewStep";
+import { SuccessStep } from "./steps/SuccessStep";
+
+// Types
+export interface VendorApplication {
+  id: string;
+  type: "BUSINESS" | "INDIVIDUAL";
+  status: string;
+  businessName?: string;
+  businessAddress?: string;
+  businessPhone?: string;
+  businessEmail?: string;
+  fullNameOnId?: string;
+  location?: string;
+  phoneNormalized?: string;
+  applicationFeePaid: boolean;
+  paymentRef?: string;
+  uploads: Array<{
     id: string;
-    email?: string;
-    phone?: string;
-    role: string;
-    name?: string;
-  };
-  vendorProfile: {
-    id: string;
-    businessName: string;
-    businessAddress: string;
-  };
+    kind: string;
+    originalName: string;
+  }>;
 }
+
+// Step configuration
+const BUSINESS_STEPS = ["type", "fee", "details", "review"];
+const INDIVIDUAL_STEPS = ["type", "fee", "details", "kyc", "capture", "review"];
 
 export default function VendorApplyPage() {
   const router = useRouter();
-  const { user, isLoggedIn, isLoading: authLoading, refreshUser } = useAuth();
+  const locale = useLocale();
+  const t = useTranslations("vendorWizard");
+  const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const toast = useToast();
 
-  const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [form, setForm] = useState({
-    businessName: "",
-    city: "",
-    address: "",
-    description: "",
-  });
+  const [loading, setLoading] = useState(true);
+  const [application, setApplication] = useState<VendorApplication | null>(null);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [applicationType, setApplicationType] = useState<"BUSINESS" | "INDIVIDUAL" | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
+  // Redirect if not logged in
   useEffect(() => {
     if (!authLoading && !isLoggedIn) {
-      router.push("/login?redirect=/account/vendor/apply");
+      router.push(`/${locale}/login?redirect=/${locale}/account/vendor/apply`);
     }
-  }, [authLoading, isLoggedIn, router]);
+  }, [authLoading, isLoggedIn, router, locale]);
+
+  // Fetch existing application
+  const fetchApplication = useCallback(async () => {
+    // Wait for auth to be ready
+    if (!isLoggedIn || authLoading) {
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      const data = await api.get<VendorApplication | null>("/vendor-applications/me", true);
+      if (data) {
+        setApplication(data);
+        setApplicationType(data.type);
+        // Determine current step based on application state
+        if (data.status === "PENDING_MANUAL_VERIFICATION" || data.status === "PENDING_KYC_REVIEW") {
+          setIsSubmitted(true);
+        } else if (data.status === "APPROVED") {
+          router.push(`/${locale}/vendor`);
+        } else if (data.status === "REJECTED") {
+          setCurrentStep(0); // Allow resubmission
+        } else {
+          // Determine step based on progress
+          if (!data.applicationFeePaid) {
+            setCurrentStep(1);
+          } else if (data.type === "BUSINESS") {
+            if (!data.businessName) {
+              setCurrentStep(2);
+            } else {
+              const hasTaxDoc = data.uploads?.some(u => u.kind === "TAXPAYER_DOC");
+              setCurrentStep(hasTaxDoc ? 3 : 2);
+            }
+          } else {
+            if (!data.fullNameOnId) {
+              setCurrentStep(2);
+            } else {
+              const hasAllKyc = ["ID_FRONT", "ID_BACK", "SELFIE"].every(
+                kind => data.uploads?.some(u => u.kind === kind)
+              );
+              if (hasAllKyc) {
+                setCurrentStep(5);
+              } else {
+                setCurrentStep(4);
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // No application exists yet - silently ignore
+    } finally {
+      setLoading(false);
+    }
+  }, [locale, router, isLoggedIn, authLoading]);
 
   useEffect(() => {
-    if (user && user.role !== "CUSTOMER") {
-      router.push("/account");
+    if (isLoggedIn && !authLoading) {
+      fetchApplication();
     }
-  }, [user, router]);
+  }, [isLoggedIn, authLoading, fetchApplication]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: "" }));
+  // Get steps array based on application type
+  const getSteps = () => {
+    if (!applicationType) return ["type"];
+    return applicationType === "BUSINESS" ? BUSINESS_STEPS : INDIVIDUAL_STEPS;
   };
 
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
+  const steps = getSteps();
+  const totalSteps = steps.length;
 
-    if (!form.businessName.trim()) {
-      newErrors.businessName = "Business name is required";
-    }
-
-    if (!form.city.trim()) {
-      newErrors.city = "City is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validate()) return;
-
-    setSubmitting(true);
-
+  // Create or update application
+  const createApplication = async (type: "BUSINESS" | "INDIVIDUAL") => {
     try {
-      const response = await api.post<VendorApplyResponse>(
-        "/vendor/apply",
-        {
-          businessName: form.businessName.trim(),
-          city: form.city.trim(),
-          address: form.address.trim() || undefined,
-          description: form.description.trim() || undefined,
-        },
-        true
-      );
-
-      // Update stored user with new role
-      if (response.user) {
-        setUser(response.user);
-        await refreshUser();
-      }
-      
-      toast.success("Vendor application submitted! Complete your KYC to proceed.");
-      router.push("/account/kyc");
+      const data = await api.post<VendorApplication>("/vendor-applications", { type }, true);
+      setApplication(data);
+      setApplicationType(type);
+      setCurrentStep(1);
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 404 || err.status === 405) {
-          toast.error("This feature is not available. Please contact support or try again later.");
-          console.error("[VendorApply] Endpoint not found. Backend may need to be rebuilt.");
-        } else {
-          const data = err.data as { message?: string | string[] };
-          const message = Array.isArray(data?.message)
-            ? data.message[0]
-            : data?.message;
-          toast.error(message || "Failed to submit application");
-        }
-      } else {
-        toast.error("Something went wrong. Please try again.");
+        toast.error(err.message);
       }
-    } finally {
-      setSubmitting(false);
     }
   };
 
-  if (authLoading || !isLoggedIn) {
+  // Handle step navigation
+  const nextStep = () => {
+    if (currentStep < totalSteps - 1) {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  // Handle submission
+  const handleSubmit = async () => {
+    if (!application) return;
+    
+    setIsSubmitting(true);
+    try {
+      await api.post(`/vendor-applications/${application.id}/submit`, {}, true);
+      setIsSubmitted(true);
+      toast.success(applicationType === "BUSINESS" 
+        ? t("success.businessTitle") 
+        : t("success.individualTitle"));
+    } catch (err) {
+      if (err instanceof ApiError) {
+        toast.error(err.message);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Loading state
+  if (authLoading || loading) {
     return (
-      <div className="py-6">
-        <div className="container-main max-w-lg">
-          <Skeleton className="h-6 w-32 mb-4" />
-          <Skeleton className="h-8 w-48 mb-6" />
+      <div className="py-8">
+        <div className="container-main max-w-2xl">
+          <Skeleton className="h-8 w-64 mb-6" />
           <div className="card p-6 space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-32 w-full" />
           </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="py-6">
-      <div className="container-main max-w-lg">
-        {/* Header */}
-        <Link
-          href="/account"
-          className="flex items-center gap-1 text-gray-500 hover:text-gray-700 mb-4"
-        >
-          <ChevronLeft className="w-5 h-5" />
-          <span>Back to Account</span>
-        </Link>
+  // Success state (submitted)
+  if (isSubmitted) {
+    return (
+      <SuccessStep
+        type={applicationType!}
+        onGoToAccount={() => router.push(`/${locale}/account`)}
+      />
+    );
+  }
 
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-jemo-orange/10 rounded-lg">
-            <Store className="w-6 h-6 text-jemo-orange" />
-          </div>
-          <div>
-            <h1 className="text-h1 text-gray-900">Become a Vendor</h1>
-            <p className="text-sm text-gray-500">
-              Start selling your products on Jemo
-            </p>
-          </div>
+  // Render current step
+  const renderStep = () => {
+    const stepName = steps[currentStep];
+
+    switch (stepName) {
+      case "type":
+        return (
+          <TypeSelectionStep
+            onSelect={createApplication}
+            existingType={application?.type}
+          />
+        );
+      
+      case "fee":
+        return (
+          <FeeStep
+            application={application}
+            onPaid={(updated) => {
+              setApplication(updated);
+              nextStep();
+            }}
+          />
+        );
+      
+      case "details":
+        if (applicationType === "BUSINESS") {
+          return (
+            <BusinessDetailsStep
+              application={application}
+              onSaved={(updated) => {
+                setApplication(updated);
+                nextStep();
+              }}
+              onBack={prevStep}
+            />
+          );
+        }
+        return (
+          <IndividualDetailsStep
+            application={application}
+            onSaved={(updated) => {
+              setApplication(updated);
+              nextStep();
+            }}
+            onBack={prevStep}
+          />
+        );
+      
+      case "kyc":
+        return (
+          <KycPrepStep onNext={nextStep} onBack={prevStep} />
+        );
+      
+      case "capture":
+        return (
+          <CaptureStep
+            application={application}
+            onComplete={(updated) => {
+              setApplication(updated);
+              nextStep();
+            }}
+            onBack={prevStep}
+          />
+        );
+      
+      case "review":
+        return (
+          <ReviewStep
+            application={application}
+            type={applicationType!}
+            onSubmit={handleSubmit}
+            onBack={prevStep}
+            isSubmitting={isSubmitting}
+          />
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="py-8 min-h-screen bg-gray-50">
+      <div className="container-main max-w-2xl">
+        {/* Header */}
+        <div className="mb-6">
+          <Link
+            href={`/${locale}/account`}
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {t("back")}
+          </Link>
+          <h1 className="text-h1 text-gray-900">{t("title")}</h1>
+          <p className="text-gray-500 mt-1">{t("subtitle")}</p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="card p-6 space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="businessName">Business Name *</Label>
-            <Input
-              id="businessName"
-              name="businessName"
-              value={form.businessName}
-              onChange={handleChange}
-              placeholder="e.g. John's Electronics"
-              className={errors.businessName ? "border-red-500" : ""}
-            />
-            {errors.businessName && (
-              <p className="text-sm text-red-500">{errors.businessName}</p>
-            )}
+        {/* Stepper (only show after type selection) */}
+        {applicationType && currentStep > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              {steps.slice(1).map((step, index) => {
+                const stepIndex = index + 1;
+                const isActive = currentStep === stepIndex;
+                const isCompleted = currentStep > stepIndex;
+                
+                return (
+                  <div key={step} className="flex items-center flex-1">
+                    <div className="flex flex-col items-center">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                          isCompleted
+                            ? "bg-green-500 text-white"
+                            : isActive
+                            ? "bg-jemo-orange text-white"
+                            : "bg-gray-200 text-gray-500"
+                        }`}
+                      >
+                        {isCompleted ? (
+                          <Check className="w-5 h-5" />
+                        ) : (
+                          stepIndex
+                        )}
+                      </div>
+                      <span
+                        className={`mt-2 text-xs text-center ${
+                          isActive ? "text-jemo-orange font-medium" : "text-gray-500"
+                        }`}
+                      >
+                        {t(`steps.${step}`)}
+                      </span>
+                    </div>
+                    {index < steps.length - 2 && (
+                      <div
+                        className={`flex-1 h-1 mx-2 rounded ${
+                          currentStep > stepIndex + 1 ? "bg-green-500" : "bg-gray-200"
+                        }`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
+        )}
 
-          <div className="space-y-2">
-            <Label htmlFor="city">City *</Label>
-            <Input
-              id="city"
-              name="city"
-              value={form.city}
-              onChange={handleChange}
-              placeholder="e.g. Douala"
-              className={errors.city ? "border-red-500" : ""}
-            />
-            {errors.city && (
-              <p className="text-sm text-red-500">{errors.city}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="address">Street Address (Optional)</Label>
-            <Input
-              id="address"
-              name="address"
-              value={form.address}
-              onChange={handleChange}
-              placeholder="e.g. 123 Market Street"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Business Description (Optional)</Label>
-            <textarea
-              id="description"
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              placeholder="Tell us about your business..."
-              rows={3}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => router.back()}
-              disabled={submitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 bg-jemo-orange hover:bg-jemo-orange/90"
-              disabled={submitting}
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                "Submit Application"
-              )}
-            </Button>
-          </div>
-        </form>
+        {/* Step Content */}
+        <div className="card bg-white p-6 shadow-card">
+          {renderStep()}
+        </div>
       </div>
     </div>
   );
 }
-

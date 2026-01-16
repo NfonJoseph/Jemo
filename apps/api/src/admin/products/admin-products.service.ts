@@ -1,22 +1,24 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto, UpdateProductDto, QueryProductsDto } from './dto';
-import { Prisma, DealType, ProductCategory } from '@prisma/client';
+import { Prisma, DealType, ProductStatus, StockStatus } from '@prisma/client';
 
 @Injectable()
 export class AdminProductsService {
+  private readonly logger = new Logger(AdminProductsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: QueryProductsDto) {
-    const { 
-      q, 
-      dealType, 
-      category, 
-      isActive, 
-      page = 1, 
-      pageSize = 20, 
-      sortBy = 'createdAt', 
-      sortOrder = 'desc' 
+    const {
+      q,
+      dealType,
+      categorySlug,
+      status,
+      page = 1,
+      pageSize = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
     } = query;
 
     const where: Prisma.ProductWhereInput = {};
@@ -25,8 +27,7 @@ export class AdminProductsService {
     if (q) {
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
-        { nameEn: { contains: q, mode: 'insensitive' } },
-        { nameFr: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
       ];
     }
 
@@ -36,14 +37,16 @@ export class AdminProductsService {
     }
 
     // Filter by category
-    if (category) {
-      where.category = category;
+    if (categorySlug) {
+      where.category = { slug: categorySlug };
     }
 
-    // Filter by active status
-    if (typeof isActive === 'boolean') {
-      where.isActive = isActive;
+    // Filter by status
+    if (status) {
+      where.status = status;
     }
+
+    // Note: isActive has been removed from schema, status field handles visibility
 
     // Get total count
     const total = await this.prisma.product.count({ where });
@@ -57,38 +60,22 @@ export class AdminProductsService {
       [sortBy]: sortOrder,
     };
 
-    // Fetch products with relations (limited fields for performance)
+    // Fetch products with relations
     const products = await this.prisma.product.findMany({
       where,
       orderBy,
       skip,
       take: pageSize,
-      select: {
-        id: true,
-        name: true,
-        nameEn: true,
-        nameFr: true,
-        price: true,
-        stock: true,
+      include: {
         category: true,
-        dealType: true,
-        isActive: true,
-        flashSalePrice: true,
-        flashSaleDiscountPercent: true,
-        flashSaleStartAt: true,
-        flashSaleEndAt: true,
-        createdAt: true,
         vendorProfile: {
           select: {
             businessName: true,
           },
         },
         images: {
-          where: { isPrimary: true },
+          where: { isMain: true },
           take: 1,
-          select: {
-            url: true,
-          },
         },
       },
     });
@@ -97,14 +84,18 @@ export class AdminProductsService {
     const data = products.map((p) => ({
       id: p.id,
       name: p.name,
-      nameEn: p.nameEn,
-      nameFr: p.nameFr,
-      price: p.price.toNumber(),
+      price: Number(p.price),
+      discountPrice: p.discountPrice ? Number(p.discountPrice) : null,
       stock: p.stock,
+      stockStatus: p.stockStatus,
+      city: p.city,
       category: p.category,
       dealType: p.dealType,
-      isActive: p.isActive,
-      flashSalePrice: p.flashSalePrice?.toNumber() ?? null,
+      status: p.status,
+      condition: p.condition,
+      rejectionReason: p.rejectionReason,
+      reviewedAt: p.reviewedAt,
+      flashSalePrice: p.flashSalePrice ? Number(p.flashSalePrice) : null,
       flashSaleDiscountPercent: p.flashSaleDiscountPercent,
       flashSaleStartAt: p.flashSaleStartAt,
       flashSaleEndAt: p.flashSaleEndAt,
@@ -134,7 +125,10 @@ export class AdminProductsService {
             businessName: true,
           },
         },
-        images: true,
+        category: true,
+        images: {
+          orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
+        },
       },
     });
 
@@ -144,8 +138,9 @@ export class AdminProductsService {
 
     return {
       ...product,
-      price: product.price.toNumber(),
-      flashSalePrice: product.flashSalePrice?.toNumber() ?? null,
+      price: Number(product.price),
+      discountPrice: product.discountPrice ? Number(product.discountPrice) : null,
+      flashSalePrice: product.flashSalePrice ? Number(product.flashSalePrice) : null,
     };
   }
 
@@ -157,6 +152,15 @@ export class AdminProductsService {
 
     if (!vendor) {
       throw new BadRequestException('Vendor profile not found');
+    }
+
+    // Validate category exists
+    const category = await this.prisma.category.findUnique({
+      where: { id: dto.categoryId },
+    });
+
+    if (!category) {
+      throw new BadRequestException('Category not found');
     }
 
     // Validate flash sale dates
@@ -173,37 +177,60 @@ export class AdminProductsService {
       throw new BadRequestException('Flash sale price must be less than regular price');
     }
 
-    const { imageUrls, ...productData } = dto;
+    const { images, ...productData } = dto;
 
     // Create product
     const product = await this.prisma.product.create({
       data: {
-        ...productData,
-        price: dto.price,
-        stock: dto.stock ?? 0,
-        category: dto.category ?? ProductCategory.OTHER,
-        dealType: dto.dealType ?? DealType.TODAYS_DEAL,
-        flashSalePrice: dto.flashSalePrice,
-        flashSaleStartAt: dto.flashSaleStartAt ? new Date(dto.flashSaleStartAt) : null,
-        flashSaleEndAt: dto.flashSaleEndAt ? new Date(dto.flashSaleEndAt) : null,
-        images: imageUrls?.length
+        vendorProfileId: productData.vendorProfileId,
+        name: productData.name,
+        description: productData.description,
+        categoryId: productData.categoryId,
+        price: productData.price,
+        discountPrice: productData.discountPrice,
+        stock: productData.stock ?? 0,
+        stockStatus: productData.stockStatus ?? StockStatus.IN_STOCK,
+        city: productData.city,
+        deliveryType: productData.deliveryType,
+        pickupAvailable: productData.pickupAvailable ?? false,
+        localDelivery: productData.localDelivery ?? false,
+        nationwideDelivery: productData.nationwideDelivery ?? false,
+        freeDelivery: productData.freeDelivery ?? false,
+        flatDeliveryFee: productData.flatDeliveryFee,
+        sameCityDeliveryFee: productData.sameCityDeliveryFee,
+        otherCityDeliveryFee: productData.otherCityDeliveryFee,
+        condition: productData.condition,
+        authenticityConfirmed: productData.authenticityConfirmed ?? false,
+        status: productData.status ?? ProductStatus.APPROVED, // Admin creates as approved
+        dealType: productData.dealType ?? DealType.TODAYS_DEAL,
+        flashSalePrice: productData.flashSalePrice,
+        flashSaleDiscountPercent: productData.flashSaleDiscountPercent,
+        flashSaleStartAt: productData.flashSaleStartAt ? new Date(productData.flashSaleStartAt) : null,
+        flashSaleEndAt: productData.flashSaleEndAt ? new Date(productData.flashSaleEndAt) : null,
+        images: images?.length
           ? {
-              create: imageUrls.map((url, index) => ({
-                url,
-                isPrimary: index === 0,
+              create: images.map((img) => ({
+                objectKey: img.objectKey,
+                url: img.url,
+                mimeType: img.mimeType,
+                size: img.size,
+                sortOrder: img.sortOrder,
+                isMain: img.isMain,
               })),
             }
           : undefined,
       },
       include: {
         images: true,
+        category: true,
       },
     });
 
     return {
       ...product,
-      price: product.price.toNumber(),
-      flashSalePrice: product.flashSalePrice?.toNumber() ?? null,
+      price: Number(product.price),
+      discountPrice: product.discountPrice ? Number(product.discountPrice) : null,
+      flashSalePrice: product.flashSalePrice ? Number(product.flashSalePrice) : null,
     };
   }
 
@@ -211,10 +238,21 @@ export class AdminProductsService {
     // Check product exists
     const existing = await this.prisma.product.findUnique({
       where: { id },
+      include: { images: true },
     });
 
     if (!existing) {
       throw new NotFoundException('Product not found');
+    }
+
+    // Validate category if provided
+    if (dto.categoryId) {
+      const category = await this.prisma.category.findUnique({
+        where: { id: dto.categoryId },
+      });
+      if (!category) {
+        throw new BadRequestException('Category not found');
+      }
     }
 
     // Validate flash sale dates
@@ -227,66 +265,76 @@ export class AdminProductsService {
     }
 
     // Validate flash sale price
-    const price = dto.price ?? existing.price.toNumber();
-    if (dto.flashSalePrice !== undefined && dto.flashSalePrice >= price) {
+    const price = dto.price ?? Number(existing.price);
+    if (dto.flashSalePrice !== undefined && dto.flashSalePrice !== null && dto.flashSalePrice >= price) {
       throw new BadRequestException('Flash sale price must be less than regular price');
     }
 
-    const { imageUrls, ...updateData } = dto;
+    const { images, ...updateData } = dto;
 
-    // Update product
-    const product = await this.prisma.product.update({
-      where: { id },
-      data: {
-        ...updateData,
-        price: dto.price,
-        flashSalePrice: dto.flashSalePrice,
-        flashSaleStartAt: dto.flashSaleStartAt !== undefined 
-          ? (dto.flashSaleStartAt ? new Date(dto.flashSaleStartAt) : null)
-          : undefined,
-        flashSaleEndAt: dto.flashSaleEndAt !== undefined
-          ? (dto.flashSaleEndAt ? new Date(dto.flashSaleEndAt) : null)
-          : undefined,
-      },
-      include: {
-        images: true,
-      },
+    // Update product and images in transaction
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Handle image updates if provided
+      if (images !== undefined) {
+        // Delete old images
+        await tx.productImage.deleteMany({
+          where: { productId: id },
+        });
+
+        // Create new images
+        if (images.length > 0) {
+          await tx.productImage.createMany({
+            data: images.map((img) => ({
+              productId: id,
+              objectKey: img.objectKey,
+              url: img.url,
+              mimeType: img.mimeType,
+              size: img.size,
+              sortOrder: img.sortOrder,
+              isMain: img.isMain,
+            })),
+          });
+        }
+      }
+
+      // Update product
+      return tx.product.update({
+        where: { id },
+        data: {
+          ...updateData,
+          flashSaleStartAt:
+            updateData.flashSaleStartAt !== undefined
+              ? updateData.flashSaleStartAt
+                ? new Date(updateData.flashSaleStartAt)
+                : null
+              : undefined,
+          flashSaleEndAt:
+            updateData.flashSaleEndAt !== undefined
+              ? updateData.flashSaleEndAt
+                ? new Date(updateData.flashSaleEndAt)
+                : null
+              : undefined,
+        },
+        include: {
+          images: true,
+          category: true,
+        },
+      });
     });
 
-    // Handle image updates if provided
-    if (imageUrls !== undefined) {
-      // Delete old images
-      await this.prisma.productImage.deleteMany({
-        where: { productId: id },
-      });
-
-      // Create new images
-      if (imageUrls.length > 0) {
-        await this.prisma.productImage.createMany({
-          data: imageUrls.map((url: string, index: number) => ({
-            productId: id,
-            url,
-            isPrimary: index === 0,
-          })),
-        });
-      }
-    }
-
     return {
-      ...product,
-      price: product.price.toNumber(),
-      flashSalePrice: product.flashSalePrice?.toNumber() ?? null,
+      ...result,
+      price: Number(result.price),
+      discountPrice: result.discountPrice ? Number(result.discountPrice) : null,
+      flashSalePrice: result.flashSalePrice ? Number(result.flashSalePrice) : null,
     };
   }
 
-  async remove(id: string) {
-    // Check product exists
+  async remove(id: string, adminUserId: string) {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
-        orderItems: {
-          take: 1,
-        },
+        orderItems: { take: 1 },
       },
     });
 
@@ -296,15 +344,20 @@ export class AdminProductsService {
 
     // Check if product has orders
     if (product.orderItems.length > 0) {
-      // Soft delete instead - just deactivate
+      // Soft delete - suspend instead of deleting
       await this.prisma.product.update({
         where: { id },
-        data: { isActive: false },
+        data: {
+          status: ProductStatus.SUSPENDED,
+          reviewedAt: new Date(),
+          reviewedById: adminUserId,
+          rejectionReason: 'Removed by admin (has existing orders)',
+        },
       });
-      return { 
-        message: 'Product has existing orders and has been deactivated instead of deleted',
+      return {
+        message: 'Product has existing orders and has been suspended instead of deleted',
         deleted: false,
-        deactivated: true,
+        suspended: true,
       };
     }
 
@@ -313,10 +366,10 @@ export class AdminProductsService {
       where: { id },
     });
 
-    return { 
+    return {
       message: 'Product deleted successfully',
       deleted: true,
-      deactivated: false,
+      suspended: false,
     };
   }
 
@@ -332,24 +385,29 @@ export class AdminProductsService {
     };
   }
 
-  async bulkDelete(ids: string[]) {
+  async bulkDelete(ids: string[], adminUserId: string) {
     // Get products with orders
     const productsWithOrders = await this.prisma.product.findMany({
-      where: { 
+      where: {
         id: { in: ids },
         orderItems: { some: {} },
       },
       select: { id: true },
     });
 
-    const hasOrdersIds = productsWithOrders.map(p => p.id);
-    const canDeleteIds = ids.filter(id => !hasOrdersIds.includes(id));
+    const hasOrdersIds = productsWithOrders.map((p) => p.id);
+    const canDeleteIds = ids.filter((id) => !hasOrdersIds.includes(id));
 
-    // Soft delete products with orders
+    // Suspend products with orders instead of deleting
     if (hasOrdersIds.length > 0) {
       await this.prisma.product.updateMany({
         where: { id: { in: hasOrdersIds } },
-        data: { isActive: false },
+        data: {
+          status: ProductStatus.SUSPENDED,
+          reviewedAt: new Date(),
+          reviewedById: adminUserId,
+          rejectionReason: 'Bulk removed by admin (has existing orders)',
+        },
       });
     }
 
@@ -361,9 +419,9 @@ export class AdminProductsService {
     }
 
     return {
-      message: `Deleted ${canDeleteIds.length} products, deactivated ${hasOrdersIds.length} products with existing orders`,
+      message: `Deleted ${canDeleteIds.length} products, suspended ${hasOrdersIds.length} products with existing orders`,
       deleted: canDeleteIds.length,
-      deactivated: hasOrdersIds.length,
+      suspended: hasOrdersIds.length,
     };
   }
 
@@ -384,10 +442,193 @@ export class AdminProductsService {
       },
     });
 
-    return vendors.map(v => ({
+    return vendors.map((v) => ({
       id: v.id,
       businessName: v.businessName,
       email: v.user.email,
     }));
+  }
+
+  // Product Approval Methods
+  async findPendingProducts(query: QueryProductsDto) {
+    const { page = 1, pageSize = 20, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+
+    const where: Prisma.ProductWhereInput = {
+      status: ProductStatus.PENDING_APPROVAL,
+    };
+
+    const total = await this.prisma.product.count({ where });
+    const skip = (page - 1) * pageSize;
+    const totalPages = Math.ceil(total / pageSize);
+
+    const products = await this.prisma.product.findMany({
+      where,
+      orderBy: { [sortBy]: sortOrder },
+      skip,
+      take: pageSize,
+      include: {
+        vendorProfile: {
+          select: {
+            id: true,
+            businessName: true,
+            user: { select: { name: true, phone: true } },
+          },
+        },
+        category: true,
+        images: { where: { isMain: true }, take: 1 },
+      },
+    });
+
+    const data = products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      price: Number(p.price),
+      discountPrice: p.discountPrice ? Number(p.discountPrice) : null,
+      stock: p.stock,
+      stockStatus: p.stockStatus,
+      city: p.city,
+      condition: p.condition,
+      status: p.status,
+      createdAt: p.createdAt,
+      category: p.category,
+      vendor: {
+        id: p.vendorProfile.id,
+        businessName: p.vendorProfile.businessName,
+        name: p.vendorProfile.user.name,
+        phone: p.vendorProfile.user.phone,
+      },
+      imageUrl: p.images[0]?.url ?? null,
+    }));
+
+    return { data, meta: { page, pageSize, total, totalPages } };
+  }
+
+  async approveProduct(productId: string, adminUserId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (product.status !== ProductStatus.PENDING_APPROVAL) {
+      throw new BadRequestException(`Product is not pending approval. Current status: ${product.status}`);
+    }
+
+    const updated = await this.prisma.product.update({
+      where: { id: productId },
+      data: {
+        status: ProductStatus.APPROVED,
+        reviewedAt: new Date(),
+        reviewedById: adminUserId,
+        rejectionReason: null,
+      },
+    });
+
+    this.logger.log(`Product ${productId} approved by admin ${adminUserId}`);
+
+    return {
+      message: 'Product approved successfully',
+      product: updated,
+    };
+  }
+
+  async rejectProduct(productId: string, reason: string, adminUserId: string) {
+    if (!reason || reason.trim().length === 0) {
+      throw new BadRequestException('Rejection reason is required');
+    }
+
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (product.status !== ProductStatus.PENDING_APPROVAL) {
+      throw new BadRequestException(`Product is not pending approval. Current status: ${product.status}`);
+    }
+
+    const updated = await this.prisma.product.update({
+      where: { id: productId },
+      data: {
+        status: ProductStatus.REJECTED,
+        reviewedAt: new Date(),
+        reviewedById: adminUserId,
+        rejectionReason: reason.trim(),
+      },
+    });
+
+    this.logger.log(`Product ${productId} rejected by admin ${adminUserId}`);
+
+    return {
+      message: 'Product rejected',
+      product: updated,
+    };
+  }
+
+  async suspendProduct(productId: string, reason: string | undefined, adminUserId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (product.status === ProductStatus.SUSPENDED) {
+      throw new BadRequestException('Product is already suspended');
+    }
+
+    const updated = await this.prisma.product.update({
+      where: { id: productId },
+      data: {
+        status: ProductStatus.SUSPENDED,
+        reviewedAt: new Date(),
+        reviewedById: adminUserId,
+        rejectionReason: reason || 'Suspended by admin',
+      },
+    });
+
+    this.logger.log(`Product ${productId} suspended by admin ${adminUserId}`);
+
+    return {
+      message: 'Product suspended',
+      product: updated,
+    };
+  }
+
+  async reinstateProduct(productId: string, adminUserId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (product.status !== ProductStatus.SUSPENDED && product.status !== ProductStatus.REJECTED) {
+      throw new BadRequestException('Product is not suspended or rejected');
+    }
+
+    const updated = await this.prisma.product.update({
+      where: { id: productId },
+      data: {
+        status: ProductStatus.APPROVED,
+        reviewedAt: new Date(),
+        reviewedById: adminUserId,
+        rejectionReason: null,
+      },
+    });
+
+    this.logger.log(`Product ${productId} reinstated by admin ${adminUserId}`);
+
+    return {
+      message: 'Product reinstated',
+      product: updated,
+    };
   }
 }
