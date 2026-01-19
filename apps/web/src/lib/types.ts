@@ -1,9 +1,9 @@
-export type UserRole = "CUSTOMER" | "VENDOR" | "RIDER" | "ADMIN";
+export type UserRole = "CUSTOMER" | "VENDOR" | "DELIVERY_AGENCY" | "ADMIN";
 
 export type KycStatus = "NOT_SUBMITTED" | "PENDING" | "APPROVED" | "REJECTED";
 
 export interface UpgradeRolePayload {
-  role: "VENDOR" | "RIDER";
+  role: "VENDOR";
   businessName?: string;
   businessAddress?: string;
   vehicleType?: string;
@@ -19,12 +19,14 @@ export interface KycSubmission {
 }
 
 export type OrderStatus =
-  | "PENDING_PAYMENT"
-  | "CONFIRMED"
-  | "PREPARING"
-  | "OUT_FOR_DELIVERY"
-  | "DELIVERED"
-  | "CANCELLED";
+  | "PENDING"       // Order created, awaiting payment confirmation (or COD)
+  | "CONFIRMED"     // Payment confirmed / COD accepted, vendor notified
+  | "IN_TRANSIT"    // Order picked up by delivery, on the way to customer
+  | "DELIVERED"     // Delivered to customer
+  | "COMPLETED"     // Customer confirmed receipt, funds released to vendor
+  | "CANCELLED";    // Order cancelled
+
+export type CancelledBy = "CUSTOMER" | "VENDOR" | "ADMIN";
 
 export type PaymentStatus = "INITIATED" | "SUCCESS" | "FAILED" | "REFUNDED";
 
@@ -36,7 +38,15 @@ export type DeliveryStatus =
   | "DELIVERED"
   | "CANCELLED";
 
+export type DeliveryJobStatus =
+  | "OPEN"         // Job is available for agencies to accept
+  | "ACCEPTED"     // Agency has accepted the job
+  | "DELIVERED"    // Successfully delivered
+  | "CANCELLED";   // Job was cancelled
+
 export type DeliveryType = "VENDOR_DELIVERY" | "JEMO_RIDER";
+
+export type DeliveryMethod = "VENDOR_SELF" | "JEMO_RIDER";
 
 export type DisputeStatus = "OPEN" | "RESOLVED" | "REJECTED";
 
@@ -45,6 +55,8 @@ export type ProductStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "SUSP
 export type StockStatus = "IN_STOCK" | "OUT_OF_STOCK";
 
 export type ProductCondition = "NEW" | "USED_LIKE_NEW" | "USED_GOOD" | "REFURBISHED";
+
+export type PaymentPolicy = "POD_ONLY" | "ONLINE_ONLY" | "MIXED_CITY_RULE";
 
 export interface User {
   id: string;
@@ -60,19 +72,52 @@ export interface Product {
   name: string;
   description: string;
   price: string;
+  discountPrice?: string | null;
   stock: number;
   stockStatus: StockStatus;
+  city?: string;
   deliveryType: DeliveryType;
+  // Vendor delivery options
+  pickupAvailable?: boolean;
+  localDelivery?: boolean;
+  nationwideDelivery?: boolean;
+  freeDelivery?: boolean;
+  flatDeliveryFee?: string | null;
+  sameCityDeliveryFee?: string | null;
+  otherCityDeliveryFee?: string | null;
+  // Status
   status: ProductStatus;
   condition: ProductCondition;
   rejectionReason?: string | null;
   reviewedAt?: string | null;
+  // Payment Policy
+  paymentPolicy: PaymentPolicy;
+  mtnMomoEnabled: boolean;
+  orangeMoneyEnabled: boolean;
   createdAt: string;
   updatedAt: string;
   images?: ProductImage[];
   vendorProfile?: {
+    id: string;
     businessName: string;
     businessAddress: string;
+  };
+  category?: {
+    id: string;
+    slug?: string;
+    nameEn: string;
+    nameFr: string;
+  };
+  // Frontend-added fields
+  isFavorited?: boolean;
+  reviewStats?: {
+    averageRating: number;
+    totalReviews: number;
+    ratingBreakdown: Record<1 | 2 | 3 | 4 | 5, number>;
+  };
+  jemoDeliveryPricing?: {
+    sameCityFee: number;
+    otherCityFee: number;
   };
 }
 
@@ -86,18 +131,62 @@ export interface ProductImage {
   sortOrder?: number;
 }
 
+export type OrderPaymentMethod = 'COD' | 'MYCOOLPAY';
+
 export interface Order {
   id: string;
   customerId: string;
   status: OrderStatus;
   totalAmount: string;
+  // Delivery information
   deliveryAddress: string;
   deliveryPhone: string;
+  deliveryCity?: string;
+  productCity?: string;           // Snapshot of product city at order time
+  deliveryMethod?: DeliveryType;  // VENDOR_DELIVERY or JEMO_RIDER
+  deliveryFee?: number;           // Delivery fee in XAF (integer)
+  deliveryFeeAgencyId?: string;
+  deliveryFeeRule?: string;
+  // Cancellation info
+  cancelledBy?: CancelledBy;
+  cancelReason?: string;
+  // Payment
+  paymentMethod: OrderPaymentMethod;
+  // Timestamps
   createdAt: string;
   updatedAt: string;
+  confirmedAt?: string;
+  inTransitAt?: string;
+  deliveredAt?: string;
+  completedAt?: string;
+  cancelledAt?: string;
+  // Earnings breakdown
+  subtotalAmount?: string;
+  commissionAmount?: string;
+  commissionRate?: string;
+  vendorPayoutAmount?: string;
+  fundsReleasedAt?: string;
+  // Relations
   items?: OrderItem[];
   payment?: Payment;
   delivery?: Delivery;
+  deliveryJob?: OrderDeliveryJob;
+}
+
+// Delivery job info for customer view
+export interface OrderDeliveryJob {
+  id: string;
+  status: DeliveryJobStatus;
+  pickupCity: string;
+  dropoffCity: string;
+  fee?: number;
+  acceptedAt: string | null;
+  deliveredAt: string | null;
+  agency?: {
+    id: string;
+    name: string;
+    phone: string | null;
+  };
 }
 
 export interface OrderItem {
@@ -159,11 +248,27 @@ export interface ProductListItem {
   id: string;
   name: string;
   price: string;
+  discountPrice?: string | null;
   stock: number;
+  stockStatus?: StockStatus;
+  city?: string;
   deliveryType: DeliveryType;
+  condition?: ProductCondition;
+  vendorProfileId?: string;
   vendorBusinessName: string;
   vendorCity: string;
   imageUrl: string | null;
+  isFavorited?: boolean;
+  // Payment Policy
+  paymentPolicy?: PaymentPolicy;
+  mtnMomoEnabled?: boolean;
+  orangeMoneyEnabled?: boolean;
+  category?: {
+    id: string;
+    slug: string;
+    nameEn: string;
+    nameFr: string;
+  };
 }
 
 // Vendor types
@@ -193,6 +298,10 @@ export interface VendorProduct {
   createdAt: string;
   updatedAt: string;
   images?: ProductImage[];
+  // Payment Policy
+  paymentPolicy?: PaymentPolicy;
+  mtnMomoEnabled?: boolean;
+  orangeMoneyEnabled?: boolean;
 }
 
 export interface VendorOrder {
@@ -202,6 +311,14 @@ export interface VendorOrder {
   totalAmount: string;
   deliveryAddress: string;
   deliveryPhone: string;
+  deliveryCity?: string;
+  productCity?: string;
+  deliveryMethod?: DeliveryMethod;
+  deliveryFee?: number;
+  cancelReason?: string;
+  cancelledBy?: CancelledBy;
+  cancelledAt?: string;
+  confirmedAt?: string;
   createdAt: string;
   updatedAt: string;
   customer?: {
@@ -212,6 +329,7 @@ export interface VendorOrder {
   items?: VendorOrderItem[];
   payment?: Payment;
   delivery?: Delivery;
+  deliveryJob?: OrderDeliveryJob;
 }
 
 export interface VendorOrderItem {
@@ -269,6 +387,10 @@ export interface UpdateProductPayload {
   city?: string;
   condition?: ProductCondition;
   images?: ProductImagePayload[];
+  // Payment Policy
+  paymentPolicy?: PaymentPolicy;
+  mtnMomoEnabled?: boolean;
+  orangeMoneyEnabled?: boolean;
 }
 
 // Rider types
@@ -314,6 +436,48 @@ export interface RiderDelivery {
     businessName: string;
     businessAddress: string;
   };
+}
+
+// DeliveryJob types for delivery agencies
+export interface DeliveryJob {
+  id: string;
+  orderId: string;
+  pickupAddress: string;
+  pickupCity: string;
+  dropoffAddress: string;
+  dropoffCity: string;
+  status: DeliveryJobStatus;
+  assignedAgencyId: string | null;
+  acceptedAt: string | null;
+  pickedUpAt: string | null;
+  deliveredAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  order?: {
+    id: string;
+    status: OrderStatus;
+    totalAmount: string;
+    deliveryFee: string | null;
+    deliveryAddress: string;
+    deliveryPhone: string;
+  };
+}
+
+export interface AvailableJob {
+  id: string;
+  orderId: string;
+  fee: number;
+  pickup: {
+    address: string;
+    city: string;
+    vendorName: string;
+  };
+  dropoff: {
+    address: string;
+    city: string;
+    customerPhone: string;
+  };
+  createdAt: string;
 }
 
 // Admin types
@@ -386,8 +550,19 @@ export interface AdminOrder {
   totalAmount: string;
   deliveryAddress: string;
   deliveryPhone: string;
+  deliveryCity?: string;
+  productCity?: string;
+  deliveryMethod?: DeliveryMethod;
+  deliveryFee?: number;
+  cancelledBy?: CancelledBy;
+  cancelReason?: string;
   createdAt: string;
   updatedAt: string;
+  confirmedAt?: string;
+  inTransitAt?: string;
+  deliveredAt?: string;
+  completedAt?: string;
+  cancelledAt?: string;
   customer?: {
     id: string;
     name: string;
@@ -423,6 +598,7 @@ export interface AdminOrder {
       };
     };
   };
+  deliveryJob?: OrderDeliveryJob;
 }
 
 export interface AdminPayment {
@@ -465,3 +641,60 @@ export interface AdminDispute {
   };
 }
 
+// =============================================
+// VENDOR WALLET TYPES
+// =============================================
+
+export type WalletTransactionType = 
+  | 'CREDIT_PENDING'
+  | 'CREDIT_AVAILABLE'
+  | 'DEBIT_WITHDRAWAL'
+  | 'REVERSAL';
+
+export type WalletTransactionReferenceType = 'ORDER' | 'PAYOUT' | 'ADJUSTMENT';
+
+export type WalletTransactionStatus = 'PENDING' | 'POSTED' | 'CANCELLED';
+
+export interface WalletTransaction {
+  id: string;
+  type: WalletTransactionType;
+  amount: number;
+  currency: string;
+  referenceType: WalletTransactionReferenceType;
+  referenceId: string;
+  status: WalletTransactionStatus;
+  note?: string;
+  createdAt: string;
+}
+
+export interface VendorWalletSummary {
+  availableBalance: number;
+  pendingBalance: number;
+  totalBalance: number;
+  currency: string;
+  pendingPayouts: number;
+  recentTransactions: WalletTransaction[];
+  updatedAt: string;
+}
+
+export interface VendorPayoutProfile {
+  preferredMethod: 'CM_MOMO' | 'CM_OM';
+  phone: string;
+  fullName: string;
+  updatedAt: string;
+}
+
+export type PayoutStatus = 'REQUESTED' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
+
+export interface Payout {
+  id: string;
+  amount: number;
+  status: PayoutStatus;
+  method: 'CM_MOMO' | 'CM_OM';
+  destinationPhone: string;
+  appTransactionRef: string;
+  providerRef?: string;
+  failureReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}

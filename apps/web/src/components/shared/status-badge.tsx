@@ -1,12 +1,15 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/lib/translations";
 import type {
   KycStatus,
   OrderStatus,
   PaymentStatus,
   DeliveryStatus,
+  DeliveryJobStatus,
   DisputeStatus,
+  PayoutStatus,
 } from "@/lib/types";
 
 type StatusType =
@@ -14,37 +17,70 @@ type StatusType =
   | OrderStatus
   | PaymentStatus
   | DeliveryStatus
-  | DisputeStatus;
+  | DeliveryJobStatus
+  | DisputeStatus
+  | PayoutStatus;
 
-const statusConfig: Record<
+// Status colors configuration
+const statusColors: Record<
   StatusType,
-  { label: string; color: string; bg: string }
+  { color: string; bg: string }
 > = {
   // KYC
-  NOT_SUBMITTED: { label: "Not Submitted", color: "text-gray-700", bg: "bg-gray-100" },
-  PENDING: { label: "Pending", color: "text-amber-700", bg: "bg-amber-100" },
-  APPROVED: { label: "Approved", color: "text-green-700", bg: "bg-green-100" },
-  REJECTED: { label: "Rejected", color: "text-red-700", bg: "bg-red-100" },
-  // Order
-  PENDING_PAYMENT: { label: "Pending Payment", color: "text-amber-700", bg: "bg-amber-100" },
-  CONFIRMED: { label: "Confirmed", color: "text-blue-700", bg: "bg-blue-100" },
-  PREPARING: { label: "Preparing", color: "text-indigo-700", bg: "bg-indigo-100" },
-  OUT_FOR_DELIVERY: { label: "Out for Delivery", color: "text-purple-700", bg: "bg-purple-100" },
-  DELIVERED: { label: "Delivered", color: "text-green-700", bg: "bg-green-100" },
-  CANCELLED: { label: "Cancelled", color: "text-red-700", bg: "bg-red-100" },
+  NOT_SUBMITTED: { color: "text-gray-700", bg: "bg-gray-100" },
+  PENDING: { color: "text-amber-700", bg: "bg-amber-100" },
+  APPROVED: { color: "text-green-700", bg: "bg-green-100" },
+  REJECTED: { color: "text-red-700", bg: "bg-red-100" },
+  // Order (new simplified statuses)
+  CONFIRMED: { color: "text-blue-700", bg: "bg-blue-100" },
+  IN_TRANSIT: { color: "text-purple-700", bg: "bg-purple-100" },
+  DELIVERED: { color: "text-green-700", bg: "bg-green-100" },
+  COMPLETED: { color: "text-emerald-700", bg: "bg-emerald-100" },
+  CANCELLED: { color: "text-red-700", bg: "bg-red-100" },
   // Payment
-  INITIATED: { label: "Initiated", color: "text-amber-700", bg: "bg-amber-100" },
-  SUCCESS: { label: "Success", color: "text-green-700", bg: "bg-green-100" },
-  FAILED: { label: "Failed", color: "text-red-700", bg: "bg-red-100" },
-  REFUNDED: { label: "Refunded", color: "text-gray-700", bg: "bg-gray-100" },
-  // Delivery
-  SEARCHING_RIDER: { label: "Searching Rider", color: "text-amber-700", bg: "bg-amber-100" },
-  ASSIGNED: { label: "Assigned", color: "text-blue-700", bg: "bg-blue-100" },
-  PICKED_UP: { label: "Picked Up", color: "text-indigo-700", bg: "bg-indigo-100" },
-  ON_THE_WAY: { label: "On the Way", color: "text-purple-700", bg: "bg-purple-100" },
+  INITIATED: { color: "text-amber-700", bg: "bg-amber-100" },
+  SUCCESS: { color: "text-green-700", bg: "bg-green-100" },
+  FAILED: { color: "text-red-700", bg: "bg-red-100" },
+  REFUNDED: { color: "text-gray-700", bg: "bg-gray-100" },
+  // Payout
+  REQUESTED: { color: "text-yellow-700", bg: "bg-yellow-100" },
+  PROCESSING: { color: "text-blue-700", bg: "bg-blue-100" },
+  // Delivery (legacy)
+  SEARCHING_RIDER: { color: "text-amber-700", bg: "bg-amber-100" },
+  ASSIGNED: { color: "text-blue-700", bg: "bg-blue-100" },
+  PICKED_UP: { color: "text-indigo-700", bg: "bg-indigo-100" },
+  ON_THE_WAY: { color: "text-purple-700", bg: "bg-purple-100" },
+  // DeliveryJob (new simplified statuses)
+  OPEN: { color: "text-amber-700", bg: "bg-amber-100" },
+  ACCEPTED: { color: "text-blue-700", bg: "bg-blue-100" },
   // Dispute
-  OPEN: { label: "Open", color: "text-amber-700", bg: "bg-amber-100" },
-  RESOLVED: { label: "Resolved", color: "text-green-700", bg: "bg-green-100" },
+  RESOLVED: { color: "text-green-700", bg: "bg-green-100" },
+};
+
+// Fallback labels for when translations are not available
+const fallbackLabels: Record<StatusType, string> = {
+  NOT_SUBMITTED: "Not Submitted",
+  PENDING: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  CONFIRMED: "Confirmed",
+  IN_TRANSIT: "In Transit",
+  DELIVERED: "Delivered",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+  INITIATED: "Initiated",
+  SUCCESS: "Success",
+  FAILED: "Failed",
+  REFUNDED: "Refunded",
+  REQUESTED: "Requested",
+  PROCESSING: "Processing",
+  SEARCHING_RIDER: "Searching Rider",
+  ASSIGNED: "Assigned",
+  PICKED_UP: "Picked Up",
+  ON_THE_WAY: "On the Way",
+  OPEN: "Open",
+  ACCEPTED: "Accepted",
+  RESOLVED: "Resolved",
 };
 
 interface StatusBadgeProps {
@@ -53,23 +89,27 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const config = statusConfig[status] || {
-    label: status,
+  const t = useTranslations("statusBadge");
+  
+  const colors = statusColors[status] || {
     color: "text-gray-700",
     bg: "bg-gray-100",
   };
+
+  // Get translated label, fall back to default if translation returns the key
+  const translated = t(status);
+  const label = translated === status ? (fallbackLabels[status] || status) : translated;
 
   return (
     <span
       className={cn(
         "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-        config.bg,
-        config.color,
+        colors.bg,
+        colors.color,
         className
       )}
     >
-      {config.label}
+      {label}
     </span>
   );
 }
-

@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsArray, IsEnum, IsInt, IsNotEmpty, IsString, Min, ValidateNested } from "class-validator";
+import { IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsNumber, IsString, Min, ValidateNested } from "class-validator";
 
 export class OrderItemDto {
   @IsString()
@@ -11,10 +11,11 @@ export class OrderItemDto {
   quantity!: number;
 }
 
+// Payment methods accepted by the API
 export enum PaymentMethod {
-  MOMO = "MOMO",
-  OM = "OM",
-  COD = "COD",
+  COD = "COD",                        // Cash on Delivery
+  MTN_MOBILE_MONEY = "MTN_MOBILE_MONEY",  // Online via MTN MoMo
+  ORANGE_MONEY = "ORANGE_MONEY",      // Online via Orange Money
 }
 
 export class CreateOrderDto {
@@ -33,5 +34,14 @@ export class CreateOrderDto {
   @IsString()
   @IsNotEmpty()
   deliveryPhone!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: "Delivery city is required" })
+  deliveryCity!: string;  // Buyer's selected delivery city (required)
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  deliveryFee?: number;  // Calculated delivery fee
 }
 

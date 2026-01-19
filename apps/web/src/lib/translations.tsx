@@ -38,8 +38,20 @@ export function useTranslations(namespace?: string) {
     let value: string = key;
     
     if (namespace) {
-      // Use namespace + key
-      const namespaceMessages = messages[namespace];
+      // Support nested namespaces like "vendor.wallet"
+      const namespaceParts = namespace.split(".");
+      let namespaceMessages: unknown = messages;
+      
+      // Navigate to the namespace
+      for (const part of namespaceParts) {
+        if (namespaceMessages && typeof namespaceMessages === "object" && part in namespaceMessages) {
+          namespaceMessages = (namespaceMessages as Record<string, unknown>)[part];
+        } else {
+          namespaceMessages = undefined;
+          break;
+        }
+      }
+      
       if (typeof namespaceMessages === "object" && namespaceMessages !== null) {
         // Support nested keys within namespace
         const nestedParts = key.split(".");

@@ -179,8 +179,53 @@ export class PaymentsController {
       });
     }
 
+    if (ref.startsWith('PAYOUT-')) {
+      // Vendor payout/withdrawal
+      return this.myCoolPayService.handlePayoutWebhook({
+        transaction_ref: dto.transaction_ref,
+        transaction_id: dto.transaction_id,
+        status: dto.status,
+        amount: dto.amount,
+        operator: dto.operator,
+        customer_phone_number: dto.customer_phone_number,
+        reason: dto.reason,
+      });
+    }
+
     // Order payment
     return this.myCoolPayService.handleWebhook({
+      transaction_ref: dto.transaction_ref,
+      transaction_id: dto.transaction_id,
+      status: dto.status,
+      amount: dto.amount,
+      operator: dto.operator,
+      customer_phone_number: dto.customer_phone_number,
+      reason: dto.reason,
+    });
+  }
+
+  /**
+   * MyCoolPay payout webhook callback
+   * Dedicated endpoint for payout notifications
+   */
+  @Post('mycoolpay/payout-webhook')
+  @HttpCode(HttpStatus.OK)
+  async handlePayoutWebhook(
+    @Body() dto: PaymentWebhookDto,
+    @Headers('x-mycoolpay-signature') signature?: string,
+  ) {
+    this.logger.log(`Payout webhook received for transaction: ${dto.transaction_ref}`);
+
+    // Verify webhook signature if secret is configured
+    if (this.webhookSecret && signature) {
+      const isValid = this.verifyWebhookSignature(dto, signature);
+      if (!isValid) {
+        this.logger.warn(`Invalid payout webhook signature for: ${dto.transaction_ref}`);
+        throw new BadRequestException('Invalid webhook signature');
+      }
+    }
+
+    return this.myCoolPayService.handlePayoutWebhook({
       transaction_ref: dto.transaction_ref,
       transaction_id: dto.transaction_id,
       status: dto.status,

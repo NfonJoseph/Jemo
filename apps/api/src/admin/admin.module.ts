@@ -10,10 +10,15 @@ import { AdminProductsController } from "./products/admin-products.controller";
 import { AdminProductsService } from "./products/admin-products.service";
 import { AdminUsersController } from "./users/admin-users.controller";
 import { AdminUsersService } from "./users/admin-users.service";
+import { AdminDeliveryAgenciesController } from "./delivery-agencies/admin-delivery-agencies.controller";
+import { AdminDeliveryAgenciesService } from "./delivery-agencies/admin-delivery-agencies.service";
+import { AdminDeliveryJobsController } from "./delivery-jobs/admin-delivery-jobs.controller";
+import { AdminDeliveryJobsService } from "./delivery-jobs/admin-delivery-jobs.service";
 import { AdminSettingsModule } from "./settings/admin-settings.module";
+import { AdminPayoutsModule } from "./payouts/admin-payouts.module";
 
 @Module({
-  imports: [AdminSettingsModule],
+  imports: [AdminSettingsModule, AdminPayoutsModule],
   controllers: [
     AdminKycController,
     AdminOrdersController,
@@ -21,6 +26,8 @@ import { AdminSettingsModule } from "./settings/admin-settings.module";
     AdminDisputesController,
     AdminProductsController,
     AdminUsersController,
+    AdminDeliveryAgenciesController,
+    AdminDeliveryJobsController,
   ],
   providers: [
     AdminKycService, 
@@ -28,6 +35,8 @@ import { AdminSettingsModule } from "./settings/admin-settings.module";
     AdminDisputesService,
     AdminProductsService,
     AdminUsersService,
+    AdminDeliveryAgenciesService,
+    AdminDeliveryJobsService,
   ],
 })
 export class AdminModule {}

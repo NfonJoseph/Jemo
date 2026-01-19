@@ -1,9 +1,9 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Package, Search, ShoppingCart, AlertCircle } from "lucide-react";
+import { Package, Search, ShoppingCart, AlertCircle, Heart, Inbox } from "lucide-react";
 import Link from "next/link";
 
-type EmptyStateType = "products" | "search" | "cart" | "error" | "generic";
+type EmptyStateType = "products" | "search" | "cart" | "error" | "generic" | "favorites" | "empty";
 
 const icons: Record<EmptyStateType, React.ReactNode> = {
   products: <Package className="w-16 h-16 text-gray-300" />,
@@ -11,6 +11,8 @@ const icons: Record<EmptyStateType, React.ReactNode> = {
   cart: <ShoppingCart className="w-16 h-16 text-gray-300" />,
   error: <AlertCircle className="w-16 h-16 text-gray-300" />,
   generic: <Package className="w-16 h-16 text-gray-300" />,
+  favorites: <Heart className="w-16 h-16 text-gray-300" />,
+  empty: <Inbox className="w-16 h-16 text-gray-300" />,
 };
 
 interface EmptyStateProps {

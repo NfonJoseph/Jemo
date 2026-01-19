@@ -20,7 +20,7 @@ import {
   Key,
   Trash2,
   Store,
-  Bike,
+  Truck,
   Shield,
   User as UserIcon,
   Loader2,
@@ -32,13 +32,13 @@ interface AdminUser {
   name: string;
   phone: string;
   email: string | null;
-  role: "CUSTOMER" | "VENDOR" | "RIDER" | "ADMIN";
+  role: "CUSTOMER" | "VENDOR" | "DELIVERY_AGENCY" | "ADMIN";
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
   vendorStatus: "PENDING" | "APPROVED" | "REJECTED" | null;
   vendorBusinessName: string | null;
-  riderStatus: "PENDING" | "APPROVED" | "REJECTED" | null;
+  deliveryAgencyStatus: "PENDING" | "APPROVED" | "REJECTED" | null;
   latestVendorApplication: {
     id: string;
     status: string;
@@ -58,7 +58,7 @@ interface UsersResponse {
   };
 }
 
-type RoleFilter = "all" | "CUSTOMER" | "VENDOR" | "RIDER" | "ADMIN";
+type RoleFilter = "all" | "CUSTOMER" | "VENDOR" | "DELIVERY_AGENCY" | "ADMIN";
 type StatusFilter = "all" | "active" | "suspended";
 
 export default function AdminUsersPage() {
@@ -174,7 +174,7 @@ export default function AdminUsersPage() {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "VENDOR": return <Store className="w-4 h-4" />;
-      case "RIDER": return <Bike className="w-4 h-4" />;
+      case "DELIVERY_AGENCY": return <Truck className="w-4 h-4" />;
       case "ADMIN": return <Shield className="w-4 h-4" />;
       default: return <UserIcon className="w-4 h-4" />;
     }
@@ -183,7 +183,7 @@ export default function AdminUsersPage() {
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case "VENDOR": return "bg-purple-100 text-purple-700";
-      case "RIDER": return "bg-blue-100 text-blue-700";
+      case "DELIVERY_AGENCY": return "bg-blue-100 text-blue-700";
       case "ADMIN": return "bg-red-100 text-red-700";
       default: return "bg-gray-100 text-gray-700";
     }
@@ -239,7 +239,7 @@ export default function AdminUsersPage() {
             <option value="all">All Roles</option>
             <option value="CUSTOMER">Customer</option>
             <option value="VENDOR">Vendor</option>
-            <option value="RIDER">Rider</option>
+            <option value="DELIVERY_AGENCY">Delivery Agency</option>
             <option value="ADMIN">Admin</option>
           </select>
           
@@ -345,8 +345,8 @@ export default function AdminUsersPage() {
                                 </p>
                               )}
                             </div>
-                          ) : user.riderStatus ? (
-                            <StatusBadge status={user.riderStatus} />
+                          ) : user.deliveryAgencyStatus ? (
+                            <StatusBadge status={user.deliveryAgencyStatus} />
                           ) : (
                             <span className="text-xs text-gray-400">N/A</span>
                           )}

@@ -170,6 +170,40 @@ export class VendorApplicationService {
   }
 
   /**
+   * Demo: Skip payment for testing (when MyCoolPay is not approved)
+   * This method should be removed or disabled in production
+   */
+  async demoSkipPayment(userId: string, applicationId: string) {
+    const application = await this.prisma.vendorApplication.findFirst({
+      where: { id: applicationId, userId },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    if (application.applicationFeePaid) {
+      return { success: true, message: 'Payment already marked as paid' };
+    }
+
+    // Mark as paid for demo purposes
+    await this.prisma.vendorApplication.update({
+      where: { id: applicationId },
+      data: {
+        applicationFeePaid: true,
+        paymentRef: `DEMO-${Date.now()}`,
+        paidAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Demo: Payment skipped for testing',
+      applicationFeePaid: true,
+    };
+  }
+
+  /**
    * Handle file upload - stores in object storage (R2 or local)
    */
   async uploadFile(
@@ -289,6 +323,22 @@ export class VendorApplicationService {
       include: { uploads: true },
     });
 
+    // Debug logging
+    const logger = new Logger('VendorApplicationSubmit');
+    logger.log(`Submit called for application: ${applicationId}`);
+    logger.log(`Application found: ${!!application}`);
+    if (application) {
+      logger.log(`Type: ${application.type}, Status: ${application.status}`);
+      logger.log(`Fee paid: ${application.applicationFeePaid}`);
+      logger.log(`Uploads: ${application.uploads.map(u => u.kind).join(', ')}`);
+      if (application.type === 'INDIVIDUAL') {
+        logger.log(`fullNameOnId: ${application.fullNameOnId}, location: ${application.location}, phone: ${application.phoneNormalized}`);
+      }
+      if (application.type === 'BUSINESS') {
+        logger.log(`businessName: ${application.businessName}, businessAddress: ${application.businessAddress}, businessPhone: ${application.businessPhone}`);
+      }
+    }
+
     if (!application) {
       throw new NotFoundException('Application not found');
     }
@@ -299,17 +349,20 @@ export class VendorApplicationService {
 
     // Validate payment
     if (!application.applicationFeePaid) {
+      logger.warn('Validation failed: Application fee not paid');
       throw new BadRequestException('Application fee not paid');
     }
 
     // Validate required fields and uploads based on type
     if (application.type === 'BUSINESS') {
       if (!application.businessName || !application.businessAddress || !application.businessPhone) {
+        logger.warn('Validation failed: Missing required business details');
         throw new BadRequestException('Missing required business details');
       }
 
       const hasTaxpayerDoc = application.uploads.some(u => u.kind === 'TAXPAYER_DOC');
       if (!hasTaxpayerDoc) {
+        logger.warn('Validation failed: Taxpayer document is required');
         throw new BadRequestException('Taxpayer document is required');
       }
 
@@ -324,6 +377,7 @@ export class VendorApplicationService {
 
     if (application.type === 'INDIVIDUAL') {
       if (!application.fullNameOnId || !application.location || !application.phoneNormalized) {
+        logger.warn(`Validation failed: Missing required personal details - fullNameOnId: ${application.fullNameOnId}, location: ${application.location}, phone: ${application.phoneNormalized}`);
         throw new BadRequestException('Missing required personal details');
       }
 
@@ -332,6 +386,7 @@ export class VendorApplicationService {
       const hasSelfie = application.uploads.some(u => u.kind === 'SELFIE');
 
       if (!hasIdFront || !hasIdBack || !hasSelfie) {
+        logger.warn(`Validation failed: Missing KYC documents - ID_FRONT: ${hasIdFront}, ID_BACK: ${hasIdBack}, SELFIE: ${hasSelfie}`);
         throw new BadRequestException('All KYC documents are required (ID front, ID back, selfie)');
       }
 

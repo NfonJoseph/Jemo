@@ -130,9 +130,16 @@ function FlashProductCard({ product, locale }: FlashProductCardProps) {
         <h3 className="text-sm font-medium text-gray-700 line-clamp-2 h-10 mb-2">
           {product.name}
         </h3>
-        <span className="text-jemo-orange font-bold text-base">
-          {formatPrice(product.price)}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-jemo-orange font-bold text-base">
+            {formatPrice(product.discountPrice || product.price)}
+          </span>
+          {product.discountPrice && product.discountPrice < product.price && (
+            <span className="text-xs text-gray-400 line-through">
+              {formatPrice(product.price)}
+            </span>
+          )}
+        </div>
       </div>
     </Link>
   );
@@ -243,7 +250,8 @@ export function FlashSaleSection() {
     setLoading(true);
     try {
       // Fetch only Flash Sale products
-      const response = await api.get<PaginatedResponse<ProductListItem>>("/products?limit=12&dealType=FLASH_SALE");
+      // Pass auth: true so backend can return isFavorited status for logged-in users
+      const response = await api.get<PaginatedResponse<ProductListItem>>("/products?limit=12&dealType=FLASH_SALE", true);
       setProducts(response.data);
     } catch (err) {
       console.error("Failed to fetch flash sale products:", err);

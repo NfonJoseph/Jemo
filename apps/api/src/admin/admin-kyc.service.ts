@@ -39,13 +39,6 @@ export class AdminKycService {
             },
           },
         },
-        riderProfile: {
-          include: {
-            user: {
-              select: { id: true, phone: true, email: true, role: true, name: true },
-            },
-          },
-        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -77,7 +70,7 @@ export class AdminKycService {
       id: `vendor-app-${app.id}`, // Prefix to distinguish from KYC submissions
       vendorApplicationId: app.id, // Keep original ID for actions
       vendorProfileId: null,
-      riderProfileId: null,
+      deliveryAgencyProfileId: null,
       status: this.mapVendorAppStatusToKycStatus(app.status),
       documentType: app.type === 'BUSINESS' ? 'TAXPAYER_DOC' : 'ID_CARD',
       documentUrl: app.uploads?.[0]?.storagePath || '',
@@ -136,13 +129,6 @@ export class AdminKycService {
       if (submission.vendorProfileId) {
         await tx.vendorProfile.update({
           where: { id: submission.vendorProfileId },
-          data: { kycStatus: KycStatus.APPROVED },
-        });
-      }
-
-      if (submission.riderProfileId) {
-        await tx.riderProfile.update({
-          where: { id: submission.riderProfileId },
           data: { kycStatus: KycStatus.APPROVED },
         });
       }
@@ -231,13 +217,6 @@ export class AdminKycService {
       if (submission.vendorProfileId) {
         await tx.vendorProfile.update({
           where: { id: submission.vendorProfileId },
-          data: { kycStatus: KycStatus.REJECTED },
-        });
-      }
-
-      if (submission.riderProfileId) {
-        await tx.riderProfile.update({
-          where: { id: submission.riderProfileId },
           data: { kycStatus: KycStatus.REJECTED },
         });
       }

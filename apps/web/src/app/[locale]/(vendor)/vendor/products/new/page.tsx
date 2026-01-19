@@ -72,6 +72,10 @@ export default function NewProductPage() {
     otherCityDeliveryFee: "",
     condition: "NEW",
     authenticityConfirmed: false,
+    // Payment policy
+    paymentPolicy: "POD_ONLY" as "POD_ONLY" | "ONLINE_ONLY" | "MIXED_CITY_RULE",
+    mtnMomoEnabled: true,
+    orangeMoneyEnabled: true,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -182,6 +186,10 @@ export default function NewProductPage() {
     }
     if (!form.authenticityConfirmed) errs.authenticityConfirmed = "Required";
     if (images.filter((i) => !i.uploading && i.objectKey).length === 0) errs.images = "Add at least one image";
+    // Payment policy validation
+    if (form.paymentPolicy !== "POD_ONLY" && !form.mtnMomoEnabled && !form.orangeMoneyEnabled) {
+      errs.paymentProviders = "At least one online payment method required";
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -211,6 +219,10 @@ export default function NewProductPage() {
       otherCityDeliveryFee: !form.freeDelivery && feeType === "varies" ? parseFloat(form.otherCityDeliveryFee || "0") : undefined,
       condition: form.condition,
       authenticityConfirmed: form.authenticityConfirmed,
+      // Payment policy
+      paymentPolicy: form.paymentPolicy,
+      mtnMomoEnabled: form.mtnMomoEnabled,
+      orangeMoneyEnabled: form.orangeMoneyEnabled,
       images: validImages.map((i) => ({
         objectKey: i.objectKey,
         url: i.url,
@@ -331,6 +343,124 @@ export default function NewProductPage() {
           <h2 className="font-semibold border-b pb-2">Condition</h2>
           <select name="condition" value={form.condition} onChange={handleChange} className="w-full h-10 border rounded px-3"><option value="NEW">New</option><option value="USED_LIKE_NEW">Like New</option><option value="USED_GOOD">Good</option><option value="REFURBISHED">Refurbished</option></select>
           <label className={`flex items-start gap-3 p-4 rounded border ${errors.authenticityConfirmed ? "border-red-500 bg-red-50" : "bg-gray-50"}`}><input type="checkbox" name="authenticityConfirmed" checked={form.authenticityConfirmed} onChange={handleChange} className="mt-1" /><div><p className="font-medium">I confirm this product is genuine *</p><p className="text-sm text-gray-500">You confirm this product is authentic and accurately described.</p></div></label>
+        </section>
+
+        {/* Payment Options Section */}
+        <section className="card p-6 space-y-4">
+          <h2 className="font-semibold border-b pb-2">
+            {locale === "fr" ? "Options de paiement" : "Payment Options"} *
+          </h2>
+          <p className="text-sm text-gray-500">
+            {locale === "fr" 
+              ? "Choisissez comment les acheteurs peuvent payer ce produit"
+              : "Choose how buyers can pay for this product"}
+          </p>
+          
+          <div className="space-y-3">
+            {/* Pay on Delivery Only */}
+            <label className={`flex items-start gap-3 p-4 rounded border cursor-pointer transition-colors ${form.paymentPolicy === "POD_ONLY" ? "border-jemo-orange bg-orange-50" : "border-gray-200 hover:border-gray-300"}`}>
+              <input 
+                type="radio" 
+                name="paymentPolicy" 
+                value="POD_ONLY" 
+                checked={form.paymentPolicy === "POD_ONLY"} 
+                onChange={handleChange} 
+                className="mt-1"
+              />
+              <div>
+                <p className="font-medium">
+                  {locale === "fr" ? "Paiement à la livraison uniquement" : "Pay on Delivery only"}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {locale === "fr" 
+                    ? "Les acheteurs paient en espèces lors de la livraison. Idéal pour les livraisons locales."
+                    : "Buyers pay in cash when the product is delivered. Best for local deliveries."}
+                </p>
+              </div>
+            </label>
+
+            {/* Online Payment Only */}
+            <label className={`flex items-start gap-3 p-4 rounded border cursor-pointer transition-colors ${form.paymentPolicy === "ONLINE_ONLY" ? "border-jemo-orange bg-orange-50" : "border-gray-200 hover:border-gray-300"}`}>
+              <input 
+                type="radio" 
+                name="paymentPolicy" 
+                value="ONLINE_ONLY" 
+                checked={form.paymentPolicy === "ONLINE_ONLY"} 
+                onChange={handleChange} 
+                className="mt-1"
+              />
+              <div>
+                <p className="font-medium">
+                  {locale === "fr" ? "Paiement en ligne uniquement" : "Online payment only"}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {locale === "fr" 
+                    ? "Les acheteurs doivent payer via MTN MoMo ou Orange Money avant la livraison."
+                    : "Buyers must pay via MTN MoMo or Orange Money before delivery."}
+                </p>
+              </div>
+            </label>
+
+            {/* Mixed City Rule */}
+            <label className={`flex items-start gap-3 p-4 rounded border cursor-pointer transition-colors ${form.paymentPolicy === "MIXED_CITY_RULE" ? "border-jemo-orange bg-orange-50" : "border-gray-200 hover:border-gray-300"}`}>
+              <input 
+                type="radio" 
+                name="paymentPolicy" 
+                value="MIXED_CITY_RULE" 
+                checked={form.paymentPolicy === "MIXED_CITY_RULE"} 
+                onChange={handleChange} 
+                className="mt-1"
+              />
+              <div>
+                <p className="font-medium">
+                  {locale === "fr" ? "Mixte: Selon la localisation" : "Mixed: Based on location"}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {locale === "fr" 
+                    ? "Paiement à la livraison pour la même ville, paiement en ligne requis pour les autres villes."
+                    : "Pay on Delivery for same city, Online payment required for different cities."}
+                </p>
+              </div>
+            </label>
+          </div>
+
+          {/* Online Payment Providers */}
+          {form.paymentPolicy !== "POD_ONLY" && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
+              <Label>
+                {locale === "fr" ? "Méthodes de paiement activées" : "Enabled Payment Methods"}
+              </Label>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2">
+                  <input 
+                    type="checkbox" 
+                    name="mtnMomoEnabled" 
+                    checked={form.mtnMomoEnabled} 
+                    onChange={handleChange}
+                  />
+                  <span className="flex items-center gap-2">
+                    <span className="w-6 h-6 bg-yellow-400 rounded text-xs font-bold flex items-center justify-center">MTN</span>
+                    MTN Mobile Money
+                  </span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input 
+                    type="checkbox" 
+                    name="orangeMoneyEnabled" 
+                    checked={form.orangeMoneyEnabled} 
+                    onChange={handleChange}
+                  />
+                  <span className="flex items-center gap-2">
+                    <span className="w-6 h-6 bg-orange-500 rounded text-xs font-bold text-white flex items-center justify-center">OM</span>
+                    Orange Money
+                  </span>
+                </label>
+              </div>
+              {errors.paymentProviders && (
+                <p className="text-sm text-red-500">{errors.paymentProviders}</p>
+              )}
+            </div>
+          )}
         </section>
 
         <div className="flex gap-4 sticky bottom-0 bg-white p-4 border-t">

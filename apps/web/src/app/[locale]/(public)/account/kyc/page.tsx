@@ -51,7 +51,7 @@ export default function KycPage() {
 
   useEffect(() => {
     async function fetchKycStatus() {
-      if (!user || (user.role !== "VENDOR" && user.role !== "RIDER")) {
+      if (!user || (user.role !== "VENDOR" && user.role !== "DELIVERY_AGENCY")) {
         setLoading(false);
         return;
       }
@@ -207,7 +207,7 @@ export default function KycPage() {
           <div>
             <h1 className="text-h1 text-gray-900">KYC Verification</h1>
             <p className="text-sm text-gray-500">
-              {user?.role === "VENDOR" ? "Vendor" : "Rider"} identity verification
+              {user?.role === "VENDOR" ? "Vendor" : "Delivery Agency"} identity verification
             </p>
           </div>
         </div>
@@ -227,7 +227,7 @@ export default function KycPage() {
                 className="mt-4 bg-jemo-orange hover:bg-jemo-orange/90"
               >
                 <Link href={user?.role === "VENDOR" ? "/vendor" : "/rider"}>
-                  Go to {user?.role === "VENDOR" ? "Vendor" : "Rider"} Dashboard
+                  Go to {user?.role === "VENDOR" ? "Vendor" : "Delivery Agency"} Dashboard
                 </Link>
               </Button>
             )}

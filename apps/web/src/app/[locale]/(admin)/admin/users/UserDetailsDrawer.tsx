@@ -15,7 +15,7 @@ import {
   Mail,
   Shield,
   Store,
-  Bike,
+  Truck,
   FileCheck,
   Package,
   ShoppingBag,
@@ -31,7 +31,7 @@ interface UserDetails {
   name: string;
   phone: string;
   email: string | null;
-  role: "CUSTOMER" | "VENDOR" | "RIDER" | "ADMIN";
+  role: "CUSTOMER" | "VENDOR" | "DELIVERY_AGENCY" | "ADMIN";
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -49,7 +49,7 @@ interface UserDetails {
       createdAt: string;
     }>;
   } | null;
-  riderProfile?: {
+  deliveryAgency?: {
     id: string;
     vehicleType: string;
     licensePlate: string | null;
@@ -123,7 +123,7 @@ export default function UserDetailsDrawer({ userId, mode, onClose, onUpdate }: P
     name: "",
     phone: "",
     email: "",
-    role: "" as "CUSTOMER" | "VENDOR" | "RIDER" | "ADMIN",
+    role: "" as "CUSTOMER" | "VENDOR" | "DELIVERY_AGENCY" | "ADMIN",
     isActive: true,
   });
 
@@ -242,7 +242,7 @@ export default function UserDetailsDrawer({ userId, mode, onClose, onUpdate }: P
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                         user.role === "ADMIN" ? "bg-red-100 text-red-700" :
                         user.role === "VENDOR" ? "bg-purple-100 text-purple-700" :
-                        user.role === "RIDER" ? "bg-blue-100 text-blue-700" :
+                        user.role === "DELIVERY_AGENCY" ? "bg-blue-100 text-blue-700" :
                         "bg-gray-100 text-gray-700"
                       }`}>
                         {user.role}
@@ -309,12 +309,12 @@ export default function UserDetailsDrawer({ userId, mode, onClose, onUpdate }: P
                             <select
                               id="role"
                               value={editForm.role}
-                              onChange={(e) => setEditForm({ ...editForm, role: e.target.value as "CUSTOMER" | "VENDOR" | "RIDER" | "ADMIN" })}
+                              onChange={(e) => setEditForm({ ...editForm, role: e.target.value as "CUSTOMER" | "VENDOR" | "DELIVERY_AGENCY" | "ADMIN" })}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-jemo-orange"
                             >
                               <option value="CUSTOMER">Customer</option>
                               <option value="VENDOR">Vendor</option>
-                              <option value="RIDER">Rider</option>
+                              <option value="DELIVERY_AGENCY">Delivery Agency</option>
                               <option value="ADMIN">Admin</option>
                             </select>
                           </div>
@@ -422,22 +422,22 @@ export default function UserDetailsDrawer({ userId, mode, onClose, onUpdate }: P
                       <p className="text-gray-500 text-sm">No vendor profile</p>
                     )}
 
-                    {/* Rider Profile */}
-                    {user.riderProfile && (
+                    {/* Delivery Agency Profile */}
+                    {user.deliveryAgency && (
                       <div className="p-4 bg-blue-50 rounded-lg">
                         <div className="flex items-center gap-2 mb-3">
-                          <Bike className="w-5 h-5 text-blue-600" />
-                          <h4 className="font-medium text-blue-900">Rider Profile</h4>
-                          <StatusBadge status={user.riderProfile.kycStatus} />
+                          <Truck className="w-5 h-5 text-blue-600" />
+                          <h4 className="font-medium text-blue-900">Delivery Agency Profile</h4>
+                          <StatusBadge status={user.deliveryAgency.kycStatus} />
                         </div>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
                             <p className="text-blue-600">Vehicle Type</p>
-                            <p className="font-medium">{user.riderProfile.vehicleType}</p>
+                            <p className="font-medium">{user.deliveryAgency.vehicleType}</p>
                           </div>
                           <div>
                             <p className="text-blue-600">License Plate</p>
-                            <p className="font-medium">{user.riderProfile.licensePlate || "N/A"}</p>
+                            <p className="font-medium">{user.deliveryAgency.licensePlate || "N/A"}</p>
                           </div>
                         </div>
                       </div>

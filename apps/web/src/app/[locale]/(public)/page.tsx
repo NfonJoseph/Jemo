@@ -47,7 +47,8 @@ export default function HomePage() {
     
     try {
       // Fetch exactly 75 products (server-side limit enforced)
-      const response = await api.get<PaginatedResponse<ProductListItem>>(`/products?limit=${PRODUCTS_LIMIT}`);
+      // Pass auth: true so backend can return isFavorited status for logged-in users
+      const response = await api.get<PaginatedResponse<ProductListItem>>(`/products?limit=${PRODUCTS_LIMIT}`, true);
       setProducts(response.data);
     } catch (err) {
       // Silent error - show skeleton fallback, no toasts
@@ -115,7 +116,6 @@ export default function HomePage() {
                   <div key={product.id} className={visibilityClass}>
                     <ProductCard
                       product={product}
-                      onAddToCart={addItem}
                     />
                   </div>
                 );

@@ -127,6 +127,18 @@ export class VendorApplicationController {
   }
 
   /**
+   * Demo: Skip payment (for testing when MyCoolPay is not approved)
+   * This endpoint should be removed or disabled in production
+   */
+  @Post(':id/demo-skip-payment')
+  async demoSkipPayment(
+    @CurrentUser() user: { id: string },
+    @Param('id') id: string
+  ) {
+    return this.service.demoSkipPayment(user.id, id);
+  }
+
+  /**
    * Submit application for review
    */
   @Post(':id/submit')

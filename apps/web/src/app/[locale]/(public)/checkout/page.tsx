@@ -22,8 +22,8 @@ import {
   ChevronLeft,
   Check,
   AlertCircle,
+  Smartphone,
 } from "lucide-react";
-import Image from "next/image";
 
 // Payment method types
 type PaymentMethodType = "COD" | "MTN_MOBILE_MONEY" | "ORANGE_MONEY";
@@ -132,15 +132,16 @@ export default function CheckoutPage() {
     setOrdering(true);
 
     try {
-      // For mobile money, first create order with PENDING status
+      // Create order with the exact payment method enum value
       const orderPayload = {
         items: items.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
         })),
-        paymentMethod: paymentMethod === "COD" ? "COD" : "MOBILE_MONEY",
+        paymentMethod: paymentMethod, // COD, MTN_MOBILE_MONEY, or ORANGE_MONEY
         deliveryAddress: deliveryAddress.trim(),
         deliveryPhone: deliveryPhone.trim(),
+        // TODO: Add deliveryCity and deliveryFee when cart supports it
       };
 
       const order = await api.post<Order>("/orders", orderPayload, true);
@@ -152,7 +153,7 @@ export default function CheckoutPage() {
         router.push(`/orders/${order.id}`);
       } else {
         // Mobile money - initiate payment
-        await initiateMobilePayment(order.id);
+        await initiateMobilePayment(order.id, Number(order.totalAmount));
       }
     } catch (err) {
       handleOrderError(err);
@@ -161,7 +162,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const initiateMobilePayment = async (orderId: string) => {
+  const initiateMobilePayment = async (orderId: string, orderTotal: number) => {
     setPaymentProcessing(true);
 
     try {
@@ -175,7 +176,7 @@ export default function CheckoutPage() {
       }>(
         "/payments/mycoolpay/payin",
         {
-          amount: totalAmount,
+          amount: orderTotal, // Use server-calculated order total
           currency: "XAF",
           paymentMethod: paymentMethod,
           customerName: user?.name || "Customer",
@@ -496,7 +497,7 @@ export default function CheckoutPage() {
                       </p>
                       <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                       <p className="text-sm font-medium text-jemo-orange">
-                        {formatPrice(item.product.price * item.quantity)}
+                        {formatPrice(parseFloat(item.product.price) * item.quantity)}
                       </p>
                     </div>
                   </div>

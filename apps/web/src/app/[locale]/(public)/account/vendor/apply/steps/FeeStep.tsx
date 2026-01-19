@@ -373,6 +373,35 @@ export function FeeStep({ application, onPaid }: FeeStepProps) {
             t("fee.payNow")
           )}
         </Button>
+
+        {/* Demo Skip Button - Remove in production */}
+        <div className="mt-6 pt-6 border-t border-dashed border-gray-300">
+          <p className="text-xs text-gray-400 text-center mb-3">
+            Demo Mode: MyCoolPay not yet approved
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={async () => {
+              if (application) {
+                try {
+                  await api.post(`/vendor-applications/${application.id}/demo-skip-payment`, {}, true);
+                  // Refresh the application data
+                  const updated = await api.get<VendorApplication>("/vendor-applications/me", true);
+                  if (updated) {
+                    onPaid(updated);
+                  }
+                  toast.success("Demo: Payment skipped for testing");
+                } catch (err) {
+                  toast.error("Failed to skip payment");
+                }
+              }
+            }}
+            className="w-full border-dashed border-gray-400 text-gray-600 hover:bg-gray-50"
+          >
+            Skip Payment (Demo Only)
+          </Button>
+        </div>
       </div>
     </div>
   );

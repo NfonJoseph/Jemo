@@ -35,7 +35,7 @@ export class AdminOrdersController {
         payment: true,
         delivery: {
           include: {
-            riderProfile: {
+            deliveryAgency: {
               include: {
                 user: { select: { name: true, phone: true } },
               },

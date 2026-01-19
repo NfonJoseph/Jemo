@@ -12,6 +12,7 @@ import { ArrowLeft, Save, Zap, Tag, Loader2, Clock, CheckCircle, XCircle, Ban } 
 
 // Types
 type ProductStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "SUSPENDED";
+type PaymentPolicy = "POD_ONLY" | "ONLINE_ONLY" | "MIXED_CITY_RULE";
 
 interface Product {
   id: string;
@@ -33,6 +34,9 @@ interface Product {
   flashSaleDiscountPercent: number | null;
   flashSaleStartAt: string | null;
   flashSaleEndAt: string | null;
+  paymentPolicy: PaymentPolicy;
+  mtnMomoEnabled: boolean;
+  orangeMoneyEnabled: boolean;
   vendorProfile: {
     id: string;
     businessName: string;
@@ -43,6 +47,7 @@ interface Product {
 const DELIVERY_TYPES = ["VENDOR_DELIVERY", "JEMO_RIDER"] as const;
 const DEAL_TYPES = ["TODAYS_DEAL", "FLASH_SALE"] as const;
 const PRODUCT_STATUSES: ProductStatus[] = ["PENDING_APPROVAL", "APPROVED", "REJECTED", "SUSPENDED"];
+const PAYMENT_POLICIES: PaymentPolicy[] = ["POD_ONLY", "ONLINE_ONLY", "MIXED_CITY_RULE"];
 
 // Default form state to prevent uncontrolled->controlled warnings
 const getDefaultFormData = () => ({
@@ -62,6 +67,9 @@ const getDefaultFormData = () => ({
   flashSaleDiscountPercent: "",
   flashSaleStartAt: "",
   flashSaleEndAt: "",
+  paymentPolicy: "POD_ONLY" as PaymentPolicy,
+  mtnMomoEnabled: true,
+  orangeMoneyEnabled: true,
 });
 
 function formatDateTimeLocal(dateStr: string | null | undefined): string {
@@ -141,6 +149,9 @@ export default function EditProductPage({
         flashSaleDiscountPercent: data.flashSaleDiscountPercent != null ? String(data.flashSaleDiscountPercent) : "",
         flashSaleStartAt: formatDateTimeLocal(data.flashSaleStartAt),
         flashSaleEndAt: formatDateTimeLocal(data.flashSaleEndAt),
+        paymentPolicy: (data.paymentPolicy as PaymentPolicy) || "POD_ONLY",
+        mtnMomoEnabled: data.mtnMomoEnabled !== false,
+        orangeMoneyEnabled: data.orangeMoneyEnabled !== false,
       });
     } catch (err) {
       console.error("Failed to load product:", err);
@@ -183,6 +194,11 @@ export default function EditProductPage({
       }
     }
 
+    // Payment policy validation
+    if (formData.paymentPolicy !== "POD_ONLY" && !formData.mtnMomoEnabled && !formData.orangeMoneyEnabled) {
+      newErrors.paymentProviders = "At least one online payment method must be enabled";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -211,6 +227,9 @@ export default function EditProductPage({
         flashSaleDiscountPercent: formData.flashSaleDiscountPercent ? parseInt(formData.flashSaleDiscountPercent, 10) : null,
         flashSaleStartAt: formData.flashSaleStartAt || null,
         flashSaleEndAt: formData.flashSaleEndAt || null,
+        paymentPolicy: formData.paymentPolicy,
+        mtnMomoEnabled: formData.mtnMomoEnabled,
+        orangeMoneyEnabled: formData.orangeMoneyEnabled,
       };
 
       await api.put(`/admin/products/${id}`, payload, true);
@@ -225,7 +244,7 @@ export default function EditProductPage({
   };
 
   // Form input handler
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -545,6 +564,84 @@ export default function EditProductPage({
                 />
                 {errors.flashSaleEndAt && <p className="mt-1 text-sm text-red-500">{errors.flashSaleEndAt}</p>}
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Payment Policy Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Options</h2>
+          <p className="text-sm text-gray-500 mb-4">Configure how buyers can pay for this product</p>
+
+          <div className="space-y-3 mb-6">
+            {PAYMENT_POLICIES.map((policy) => (
+              <label
+                key={policy}
+                className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                  formData.paymentPolicy === policy
+                    ? "border-jemo-orange bg-orange-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="paymentPolicy"
+                  value={policy}
+                  checked={formData.paymentPolicy === policy}
+                  onChange={(e) => handleChange("paymentPolicy", e.target.value)}
+                  className="mt-1"
+                />
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {policy === "POD_ONLY" ? "Pay on Delivery only" :
+                     policy === "ONLINE_ONLY" ? "Online payment only" :
+                     "Mixed: Based on location"}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {policy === "POD_ONLY" ? "Buyers pay in cash when the product is delivered" :
+                     policy === "ONLINE_ONLY" ? "Buyers must pay via MTN MoMo or Orange Money before delivery" :
+                     "Pay on Delivery for same city, Online payment for different cities"}
+                  </p>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          {/* Online Payment Providers */}
+          {formData.paymentPolicy !== "POD_ONLY" && (
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Enabled Payment Methods
+              </label>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={formData.mtnMomoEnabled}
+                    onChange={(e) => handleChange("mtnMomoEnabled", e.target.checked)}
+                    className="w-4 h-4 text-jemo-orange border-gray-300 rounded focus:ring-jemo-orange"
+                  />
+                  <span className="flex items-center gap-2">
+                    <span className="w-6 h-6 bg-yellow-400 rounded text-xs font-bold flex items-center justify-center">MTN</span>
+                    MTN Mobile Money
+                  </span>
+                </label>
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={formData.orangeMoneyEnabled}
+                    onChange={(e) => handleChange("orangeMoneyEnabled", e.target.checked)}
+                    className="w-4 h-4 text-jemo-orange border-gray-300 rounded focus:ring-jemo-orange"
+                  />
+                  <span className="flex items-center gap-2">
+                    <span className="w-6 h-6 bg-orange-500 rounded text-xs font-bold text-white flex items-center justify-center">OM</span>
+                    Orange Money
+                  </span>
+                </label>
+              </div>
+              {errors.paymentProviders && (
+                <p className="mt-2 text-sm text-red-500">{errors.paymentProviders}</p>
+              )}
             </div>
           )}
         </div>

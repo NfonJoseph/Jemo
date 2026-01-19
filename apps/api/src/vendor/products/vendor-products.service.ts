@@ -124,6 +124,10 @@ export class VendorProductsService {
         otherCityDeliveryFee: dto.otherCityDeliveryFee,
         condition: dto.condition,
         authenticityConfirmed: dto.authenticityConfirmed,
+        // Payment policy
+        paymentPolicy: dto.paymentPolicy,
+        mtnMomoEnabled: dto.mtnMomoEnabled ?? true,
+        orangeMoneyEnabled: dto.orangeMoneyEnabled ?? true,
         status: ProductStatus.PENDING_APPROVAL, // Always pending on creation
         images: {
           create: dto.images.map((img) => ({

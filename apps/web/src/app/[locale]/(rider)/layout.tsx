@@ -5,43 +5,50 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/lib/auth-context";
+import { useTranslations, useLocale } from "@/lib/translations";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Home,
-  Bike,
+  Truck,
   Package,
   Clock,
   LogOut,
   Menu,
   X,
+  Settings,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const RIDER_NAV = [
-  { label: "Dashboard", href: "/rider", icon: Home },
-  { label: "Available", href: "/rider/deliveries/available", icon: Package },
-  { label: "My Deliveries", href: "/rider/deliveries/me", icon: Clock },
-];
-
-export default function RiderLayout({
+export default function DeliveryAgencyLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations("deliveryAgencyNav");
   const { user, isLoggedIn, isLoading, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const DELIVERY_NAV = [
+    { label: t("dashboard"), href: `/${locale}/rider`, icon: Home },
+    { label: t("available"), href: `/${locale}/rider/deliveries/available`, icon: Package },
+    { label: t("myDeliveries"), href: `/${locale}/rider/deliveries/me`, icon: Clock },
+    { label: t("pricing"), href: `/${locale}/rider/pricing`, icon: DollarSign },
+    { label: t("settings"), href: `/${locale}/rider/settings`, icon: Settings },
+  ];
+
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
-      router.push("/login?redirect=/rider");
+      router.push(`/${locale}/login?redirect=/${locale}/rider`);
     }
-  }, [isLoading, isLoggedIn, router]);
+  }, [isLoading, isLoggedIn, router, locale]);
 
   const handleLogout = () => {
     logout();
-    router.push("/");
+    router.push(`/${locale}`);
   };
 
   if (isLoading) {
@@ -59,33 +66,22 @@ export default function RiderLayout({
     return null;
   }
 
-  if (user?.role !== "RIDER") {
+  // Only DELIVERY_AGENCY role can access this area
+  if (user?.role !== "DELIVERY_AGENCY") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Bike className="w-8 h-8 text-red-500" />
+            <Truck className="w-8 h-8 text-red-500" />
           </div>
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h1>
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">{t("accessDenied")}</h1>
           <p className="text-gray-600 mb-6">
-            This area is only accessible to riders.
-            {user?.role === "CUSTOMER" && " You can apply to become a rider from your account."}
+            {t("accessDeniedDesc")}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            {user?.role === "CUSTOMER" ? (
-              <>
-                <Button asChild variant="outline">
-                  <Link href="/">Go Home</Link>
-                </Button>
-                <Button asChild className="bg-jemo-orange hover:bg-jemo-orange/90">
-                  <Link href="/account">Go to My Account</Link>
-                </Button>
-              </>
-            ) : (
-              <Button asChild className="bg-jemo-orange hover:bg-jemo-orange/90">
-                <Link href="/">Go Home</Link>
-              </Button>
-            )}
+            <Button asChild className="bg-jemo-orange hover:bg-jemo-orange/90">
+              <Link href={`/${locale}`}>{t("goHome")}</Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -97,7 +93,7 @@ export default function RiderLayout({
       {/* Mobile Header */}
       <header className="md:hidden sticky top-0 z-40 bg-jemo-orange shadow-md">
         <div className="flex items-center justify-between h-14 px-4">
-          <Link href="/rider" className="flex items-center gap-2">
+          <Link href={`/${locale}/rider`} className="flex items-center gap-2">
             <Image
               src="/logo-white.png"
               alt="Jemo"
@@ -105,7 +101,7 @@ export default function RiderLayout({
               height={28}
               className="h-7 w-auto"
             />
-            <span className="text-white text-sm font-medium">Rider</span>
+            <span className="text-white text-sm font-medium">{t("delivery")}</span>
           </Link>
           <Button
             variant="ghost"
@@ -136,9 +132,9 @@ export default function RiderLayout({
       >
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 bg-jemo-orange">
-          <Link href="/rider" className="flex items-center gap-2">
-            <Bike className="w-6 h-6 text-white" />
-            <span className="text-white font-semibold">Rider Portal</span>
+          <Link href={`/${locale}/rider`} className="flex items-center gap-2">
+            <Truck className="w-6 h-6 text-white" />
+            <span className="text-white font-semibold">{t("deliveryPortal")}</span>
           </Link>
           <Button
             variant="ghost"
@@ -160,7 +156,7 @@ export default function RiderLayout({
 
         {/* Nav Links */}
         <nav className="p-4 space-y-1">
-          {RIDER_NAV.map((item) => (
+          {DELIVERY_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -176,19 +172,19 @@ export default function RiderLayout({
         {/* Bottom Actions */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <Link
-            href="/"
+            href={`/${locale}`}
             className="flex items-center gap-3 px-3 py-2.5 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors mb-2"
             onClick={() => setSidebarOpen(false)}
           >
             <Home className="w-5 h-5" />
-            Back to Store
+            {t("backToStore")}
           </Link>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-3 py-2.5 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <LogOut className="w-5 h-5" />
-            Logout
+            {t("logout")}
           </button>
         </div>
       </aside>

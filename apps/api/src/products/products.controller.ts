@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Query, Logger } from "@nestjs/common";
+import { Controller, Get, Param, Query, Logger, UseGuards, Req } from "@nestjs/common";
 import { DealType } from "@prisma/client";
 import { ProductsService, ProductFilters } from "./products.service";
+import { OptionalJwtAuthGuard } from "../auth/guards/optional-jwt-auth.guard";
 
 @Controller("products")
 export class ProductsController {
@@ -9,7 +10,9 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   async findAll(
+    @Req() req: { user?: { id: string } },
     @Query("page") page?: string,
     @Query("limit") limit?: string,
     @Query("q") q?: string,
@@ -28,6 +31,7 @@ export class ProductsController {
         maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
         sort: sort as ProductFilters["sort"],
         dealType: dealType ? (dealType as DealType) : undefined,
+        userId: req.user?.id, // Optional: for favorites
       };
 
       const result = await this.productsService.findAll(
@@ -45,13 +49,35 @@ export class ProductsController {
   }
 
   @Get(":id")
-  async findOne(@Param("id") id: string) {
+  @UseGuards(OptionalJwtAuthGuard)
+  async findOne(
+    @Param("id") id: string,
+    @Req() req: { user?: { id: string } },
+  ) {
     this.logger.log(`GET /products/${id}`);
     try {
-      return await this.productsService.findOne(id);
+      return await this.productsService.findOne(id, req.user?.id);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error(`Failed to fetch product ${id}: ${err.message}`, err.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate delivery fee for a product to a destination city
+   */
+  @Get(":id/delivery-fee")
+  async calculateDeliveryFee(
+    @Param("id") id: string,
+    @Query("city") city: string,
+  ) {
+    this.logger.log(`GET /products/${id}/delivery-fee?city=${city}`);
+    try {
+      return await this.productsService.calculateDeliveryFee(id, city);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to calculate delivery fee for ${id}: ${err.message}`, err.stack);
       throw error;
     }
   }

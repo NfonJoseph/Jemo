@@ -176,7 +176,10 @@ export default function VendorApplyPage() {
         : t("success.individualTitle"));
     } catch (err) {
       if (err instanceof ApiError) {
-        toast.error(err.message);
+        // Extract message from API error data
+        const errorData = err.data as { message?: string } | null;
+        const message = errorData?.message || err.message;
+        toast.error(message);
       }
     } finally {
       setIsSubmitting(false);

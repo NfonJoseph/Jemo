@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/lib/auth-context";
+import { useTranslations, useLocale } from "@/lib/translations";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared";
@@ -16,15 +17,11 @@ import {
   Menu,
   X,
   Store,
+  Wallet,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-
-const VENDOR_NAV = [
-  { label: "Dashboard", href: "/vendor", icon: Home },
-  { label: "Products", href: "/vendor/products", icon: Package },
-  { label: "Orders", href: "/vendor/orders", icon: ShoppingBag },
-];
 
 export default function VendorLayout({
   children,
@@ -34,16 +31,26 @@ export default function VendorLayout({
   const router = useRouter();
   const { user, isLoggedIn, isLoading, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const t = useTranslations("vendorNav");
+  const locale = useLocale();
+
+  const VENDOR_NAV = [
+    { label: t("dashboard"), href: `/${locale}/vendor`, icon: Home },
+    { label: t("products"), href: `/${locale}/vendor/products`, icon: Package },
+    { label: t("orders"), href: `/${locale}/vendor/orders`, icon: ShoppingBag },
+    { label: t("wallet"), href: `/${locale}/vendor/wallet`, icon: Wallet },
+    { label: t("payoutSettings"), href: `/${locale}/vendor/payout-settings`, icon: Settings },
+  ];
 
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
-      router.push("/login?redirect=/vendor");
+      router.push(`/${locale}/login?redirect=/${locale}/vendor`);
     }
-  }, [isLoading, isLoggedIn, router]);
+  }, [isLoading, isLoggedIn, router, locale]);
 
   const handleLogout = () => {
     logout();
-    router.push("/");
+    router.push(`/${locale}`);
   };
 
   if (isLoading) {
@@ -68,24 +75,24 @@ export default function VendorLayout({
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Store className="w-8 h-8 text-red-500" />
           </div>
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h1>
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">{t("accessDenied")}</h1>
           <p className="text-gray-600 mb-6">
-            This area is only accessible to vendors.
-            {user?.role === "CUSTOMER" && " You can apply to become a vendor from your account."}
+            {t("accessDeniedDesc")}
+            {user?.role === "CUSTOMER" && ` ${t("applyFromAccount")}`}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {user?.role === "CUSTOMER" ? (
               <>
                 <Button asChild variant="outline">
-                  <Link href="/">Go Home</Link>
+                  <Link href={`/${locale}`}>{t("goHome")}</Link>
                 </Button>
                 <Button asChild className="bg-jemo-orange hover:bg-jemo-orange/90">
-                  <Link href="/account">Go to My Account</Link>
+                  <Link href={`/${locale}/account`}>{t("goToAccount")}</Link>
                 </Button>
               </>
             ) : (
               <Button asChild className="bg-jemo-orange hover:bg-jemo-orange/90">
-                <Link href="/">Go Home</Link>
+                <Link href={`/${locale}`}>{t("goHome")}</Link>
               </Button>
             )}
           </div>
@@ -99,7 +106,7 @@ export default function VendorLayout({
       {/* Mobile Header */}
       <header className="md:hidden sticky top-0 z-40 bg-jemo-orange shadow-md">
         <div className="flex items-center justify-between h-14 px-4">
-          <Link href="/vendor" className="flex items-center gap-2">
+          <Link href={`/${locale}/vendor`} className="flex items-center gap-2">
             <Image
               src="/logo-white.png"
               alt="Jemo"
@@ -107,7 +114,7 @@ export default function VendorLayout({
               height={28}
               className="h-7 w-auto"
             />
-            <span className="text-white text-sm font-medium">Vendor</span>
+            <span className="text-white text-sm font-medium">{t("portal")}</span>
           </Link>
           <Button
             variant="ghost"
@@ -138,9 +145,9 @@ export default function VendorLayout({
       >
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 bg-jemo-orange">
-          <Link href="/vendor" className="flex items-center gap-2">
+          <Link href={`/${locale}/vendor`} className="flex items-center gap-2">
             <Store className="w-6 h-6 text-white" />
-            <span className="text-white font-semibold">Vendor Portal</span>
+            <span className="text-white font-semibold">{t("portal")}</span>
           </Link>
           <Button
             variant="ghost"
@@ -178,19 +185,19 @@ export default function VendorLayout({
         {/* Bottom Actions */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <Link
-            href="/"
+            href={`/${locale}`}
             className="flex items-center gap-3 px-3 py-2.5 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors mb-2"
             onClick={() => setSidebarOpen(false)}
           >
             <Home className="w-5 h-5" />
-            Back to Store
+            {t("backToStore")}
           </Link>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-3 py-2.5 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <LogOut className="w-5 h-5" />
-            Logout
+            {t("logout")}
           </button>
         </div>
       </aside>

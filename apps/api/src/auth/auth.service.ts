@@ -21,9 +21,12 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    // ADMIN registration not allowed via API
+    // ADMIN and DELIVERY_AGENCY registration not allowed via API (admin-created only)
     if (dto.role === UserRole.ADMIN) {
       throw new BadRequestException("Admin registration is not allowed");
+    }
+    if (dto.role === UserRole.DELIVERY_AGENCY) {
+      throw new BadRequestException("Delivery agency accounts can only be created by administrators");
     }
 
     // Normalize and validate phone number
@@ -60,13 +63,6 @@ export class AuthService {
       }
     }
 
-    // Validate rider-specific fields
-    if (dto.role === UserRole.RIDER) {
-      if (!dto.vehicleType) {
-        throw new BadRequestException("Rider registration requires vehicleType");
-      }
-    }
-
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     const user = await this.prisma.$transaction(async (tx) => {
@@ -86,16 +82,6 @@ export class AuthService {
             userId: newUser.id,
             businessName: dto.businessName!,
             businessAddress: dto.businessAddress!,
-          },
-        });
-      }
-
-      if (dto.role === UserRole.RIDER) {
-        await tx.riderProfile.create({
-          data: {
-            userId: newUser.id,
-            vehicleType: dto.vehicleType!,
-            licensePlate: dto.licensePlate,
           },
         });
       }
@@ -194,17 +180,16 @@ export class AuthService {
       throw new BadRequestException("Only customers can upgrade their role");
     }
 
+    // DELIVERY_AGENCY role cannot be self-assigned - admin only
+    if (dto.role === UserRole.DELIVERY_AGENCY) {
+      throw new BadRequestException("Delivery agency accounts can only be created by administrators");
+    }
+
     if (dto.role === UserRole.VENDOR) {
       if (!dto.businessName || !dto.businessAddress) {
         throw new BadRequestException(
           "Vendor upgrade requires businessName and businessAddress"
         );
-      }
-    }
-
-    if (dto.role === UserRole.RIDER) {
-      if (!dto.vehicleType) {
-        throw new BadRequestException("Rider upgrade requires vehicleType");
       }
     }
 
@@ -220,16 +205,6 @@ export class AuthService {
             userId: updated.id,
             businessName: dto.businessName!,
             businessAddress: dto.businessAddress!,
-          },
-        });
-      }
-
-      if (dto.role === UserRole.RIDER) {
-        await tx.riderProfile.create({
-          data: {
-            userId: updated.id,
-            vehicleType: dto.vehicleType!,
-            licensePlate: dto.licensePlate,
           },
         });
       }

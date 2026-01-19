@@ -21,6 +21,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@jemo/shared": [
+        "../../packages/shared/src/index.ts"
       ]
     },
     "isolatedModules": true

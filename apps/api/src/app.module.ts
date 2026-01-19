@@ -13,10 +13,17 @@ import { OrdersModule } from "./orders/orders.module";
 import { VendorOrdersModule } from "./vendor/orders/vendor-orders.module";
 import { RiderDeliveriesModule } from "./rider/deliveries/rider-deliveries.module";
 import { RiderApplyModule } from "./rider/apply/rider-apply.module";
+import { AgencyModule } from "./agency/agency.module";
 import { DisputesModule } from "./disputes/disputes.module";
 import { PaymentsModule } from "./payments/payments.module";
 import { CategoriesModule } from "./categories/categories.module";
 import { UploadsModule } from "./uploads/uploads.module";
+import { FavoritesModule } from "./favorites/favorites.module";
+import { ReviewsModule } from "./reviews/reviews.module";
+import { WalletModule } from "./wallet/wallet.module";
+import { VendorPayoutModule } from "./vendor/payout/vendor-payout.module";
+import { VendorWalletApiModule } from "./vendor/wallet/vendor-wallet-api.module";
+import { DeliveryModule } from "./delivery/delivery.module";
 import { HealthController } from "./health/health.controller";
 
 @Module({
@@ -35,10 +42,17 @@ import { HealthController } from "./health/health.controller";
     VendorOrdersModule,
     RiderDeliveriesModule,
     RiderApplyModule,
+    AgencyModule,
     DisputesModule,
     PaymentsModule,
     CategoriesModule,
     UploadsModule,
+    FavoritesModule,
+    ReviewsModule,
+    WalletModule,
+    VendorPayoutModule,
+    VendorWalletApiModule,
+    DeliveryModule,
   ],
   controllers: [HealthController],
 })

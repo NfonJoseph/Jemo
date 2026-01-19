@@ -14,7 +14,7 @@ function normalizeProduct(product: AddableProduct): CartItemProduct {
       imageUrl: product.imageUrl,
     };
   }
-  const img = product.images?.find((i) => i.isPrimary)?.url || product.images?.[0]?.url || null;
+  const img = product.images?.find((i) => i.isMain)?.url || product.images?.[0]?.url || null;
   return {
     id: product.id,
     name: product.name,

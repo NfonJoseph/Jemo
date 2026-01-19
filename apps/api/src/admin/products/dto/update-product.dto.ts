@@ -12,7 +12,7 @@ import {
   IsDateString,
   ValidateNested,
 } from 'class-validator';
-import { DealType, DeliveryType, ProductCondition, ProductStatus, StockStatus } from '@prisma/client';
+import { DealType, DeliveryType, PaymentPolicy, ProductCondition, ProductStatus, StockStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { AdminProductImageDto } from './create-product.dto';
 
@@ -101,6 +101,19 @@ export class UpdateProductDto {
   @IsEnum(ProductStatus)
   @IsOptional()
   status?: ProductStatus;
+
+  // Payment Policy
+  @IsEnum(PaymentPolicy)
+  @IsOptional()
+  paymentPolicy?: PaymentPolicy;
+
+  @IsBoolean()
+  @IsOptional()
+  mtnMomoEnabled?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  orangeMoneyEnabled?: boolean;
 
   @IsEnum(DealType)
   @IsOptional()

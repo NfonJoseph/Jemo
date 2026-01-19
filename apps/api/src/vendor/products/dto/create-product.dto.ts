@@ -11,7 +11,7 @@ import {
   ArrayMaxSize,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-import { DeliveryType, ProductCondition, StockStatus } from '@prisma/client';
+import { DeliveryType, ProductCondition, StockStatus, PaymentPolicy } from '@prisma/client';
 
 /**
  * DTO for product images when CREATING a product (all fields required)
@@ -134,6 +134,21 @@ export class CreateProductDto {
 
   @IsBoolean()
   authenticityConfirmed!: boolean;
+
+  // Payment Policy - Required
+  @IsEnum(PaymentPolicy, { 
+    message: 'Payment policy must be POD_ONLY, ONLINE_ONLY, or MIXED_CITY_RULE' 
+  })
+  paymentPolicy!: PaymentPolicy;
+
+  // Online payment providers - only relevant when ONLINE_ONLY or MIXED_CITY_RULE
+  @IsOptional()
+  @IsBoolean()
+  mtnMomoEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  orangeMoneyEnabled?: boolean;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -266,6 +281,22 @@ export class UpdateProductDto {
   @IsOptional()
   @IsBoolean()
   authenticityConfirmed?: boolean;
+
+  // Payment Policy
+  @IsOptional()
+  @IsEnum(PaymentPolicy, { 
+    message: 'Payment policy must be POD_ONLY, ONLINE_ONLY, or MIXED_CITY_RULE' 
+  })
+  paymentPolicy?: PaymentPolicy;
+
+  // Online payment providers
+  @IsOptional()
+  @IsBoolean()
+  mtnMomoEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  orangeMoneyEnabled?: boolean;
 
   @IsOptional()
   @IsArray()

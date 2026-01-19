@@ -107,7 +107,8 @@ function MarketplaceContent() {
 
       try {
         const queryString = buildApiQueryString(filters);
-        const response = await api.get<ProductsApiResponse>(`/products?${queryString}`);
+        // Pass auth: true so backend can return isFavorited status for logged-in users
+        const response = await api.get<ProductsApiResponse>(`/products?${queryString}`, true);
 
         // Handle different API response shapes
         const productList = response.data || response.items || [];
@@ -151,7 +152,8 @@ function MarketplaceContent() {
       setError(null);
       try {
         const queryString = buildApiQueryString(filters);
-        const response = await api.get<ProductsApiResponse>(`/products?${queryString}`);
+        // Pass auth: true so backend can return isFavorited status for logged-in users
+        const response = await api.get<ProductsApiResponse>(`/products?${queryString}`, true);
         const productList = response.data || response.items || [];
         const responseMeta = response.meta || {
           page: filters.page || 1,
@@ -243,7 +245,6 @@ function MarketplaceContent() {
                     <ProductCard
                       key={product.id}
                       product={product}
-                      onAddToCart={addItem}
                     />
                   ))}
                 </div>

@@ -18,8 +18,10 @@ export class RegisterDto {
   @IsNotEmpty()
   name!: string;
 
-  @IsEnum([UserRole.CUSTOMER, UserRole.VENDOR, UserRole.RIDER], {
-    message: "Role must be CUSTOMER, VENDOR, or RIDER",
+  // Only CUSTOMER and VENDOR can self-register
+  // DELIVERY_AGENCY accounts are created by administrators only
+  @IsEnum([UserRole.CUSTOMER, UserRole.VENDOR], {
+    message: "Role must be CUSTOMER or VENDOR. Delivery agency accounts can only be created by administrators.",
   })
   role!: UserRole;
 
@@ -30,12 +32,4 @@ export class RegisterDto {
   @IsString()
   @IsOptional()
   businessAddress?: string;
-
-  @IsString()
-  @IsOptional()
-  vehicleType?: string;
-
-  @IsString()
-  @IsOptional()
-  licensePlate?: string;
 }

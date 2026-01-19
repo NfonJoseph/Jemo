@@ -13,7 +13,7 @@ export class KycController {
   constructor(private readonly kycService: KycService) {}
 
   @Post("submit")
-  @Roles(UserRole.VENDOR, UserRole.RIDER)
+  @Roles(UserRole.VENDOR, UserRole.DELIVERY_AGENCY)
   submit(
     @CurrentUser() user: { id: string; role: UserRole },
     @Body() dto: SubmitKycDto
@@ -22,7 +22,7 @@ export class KycController {
   }
 
   @Get("me")
-  @Roles(UserRole.VENDOR, UserRole.RIDER)
+  @Roles(UserRole.VENDOR, UserRole.DELIVERY_AGENCY)
   getMyKyc(@CurrentUser() user: { id: string; role: UserRole }) {
     return this.kycService.getMyKyc(user.id, user.role);
   }

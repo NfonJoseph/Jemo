@@ -15,7 +15,6 @@ import {
   Mail,
   Phone,
   Store,
-  Bike,
   Shield,
   Package,
   ChevronRight,
@@ -25,6 +24,7 @@ import {
   CheckCircle2,
   XCircle,
   ArrowRight,
+  Truck,
 } from "lucide-react";
 
 interface KycState {
@@ -82,7 +82,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     async function fetchKycStatus() {
-      if (!user || (user.role !== "VENDOR" && user.role !== "RIDER")) return;
+      if (!user || (user.role !== "VENDOR" && user.role !== "DELIVERY_AGENCY")) return;
 
       setKycLoading(true);
       try {
@@ -141,7 +141,7 @@ export default function AccountPage() {
     switch (user?.role) {
       case "VENDOR":
         return "bg-purple-100 text-purple-700";
-      case "RIDER":
+      case "DELIVERY_AGENCY":
         return "bg-blue-100 text-blue-700";
       case "ADMIN":
         return "bg-red-100 text-red-700";
@@ -154,8 +154,8 @@ export default function AccountPage() {
     switch (user?.role) {
       case "VENDOR":
         return t("roles.vendor");
-      case "RIDER":
-        return t("roles.rider");
+      case "DELIVERY_AGENCY":
+        return t("roles.deliveryAgency");
       case "ADMIN":
         return t("roles.admin");
       default:
@@ -172,8 +172,8 @@ export default function AccountPage() {
     switch (user?.role) {
       case "VENDOR":
         return { href: `/${locale}/vendor`, label: t("dashboard.vendor"), icon: Store };
-      case "RIDER":
-        return { href: `/${locale}/rider`, label: t("dashboard.rider"), icon: Bike };
+      case "DELIVERY_AGENCY":
+        return { href: `/${locale}/rider`, label: t("dashboard.deliveryAgency"), icon: Truck };
       case "ADMIN":
         return { href: `/${locale}/admin`, label: t("dashboard.admin"), icon: Shield };
       default:
@@ -184,7 +184,7 @@ export default function AccountPage() {
   const dashboardLink = getDashboardLink();
 
   const renderKycSection = () => {
-    if (user?.role !== "VENDOR" && user?.role !== "RIDER") return null;
+    if (user?.role !== "VENDOR" && user?.role !== "DELIVERY_AGENCY") return null;
 
     if (kycLoading) {
       return (
@@ -467,32 +467,19 @@ export default function AccountPage() {
           <div className="card p-6">
             <h3 className="text-h3 text-gray-900 mb-4">{t("partner.title")}</h3>
             <p className="text-sm text-gray-500 mb-4">
-              {t("partner.subtitle")}
+              {t("partner.vendorSubtitle")}
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Button
-                asChild
-                variant="outline"
-                className="h-auto py-4 flex-col items-center gap-2"
-              >
-                <Link href={`/${locale}/account/vendor/apply`}>
-                  <Store className="w-6 h-6 text-jemo-orange" />
-                  <span className="font-medium">{t("partner.vendor.title")}</span>
-                  <span className="text-xs text-gray-500">{t("partner.vendor.subtitle")}</span>
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="h-auto py-4 flex-col items-center gap-2"
-              >
-                <Link href={`/${locale}/account/rider/apply`}>
-                  <Bike className="w-6 h-6 text-jemo-orange" />
-                  <span className="font-medium">{t("partner.rider.title")}</span>
-                  <span className="text-xs text-gray-500">{t("partner.rider.subtitle")}</span>
-                </Link>
-              </Button>
-            </div>
+            <Button
+              asChild
+              variant="outline"
+              className="h-auto py-4 flex-col items-center gap-2 w-full sm:w-auto"
+            >
+              <Link href={`/${locale}/account/vendor/apply`}>
+                <Store className="w-6 h-6 text-jemo-orange" />
+                <span className="font-medium">{t("partner.vendor.title")}</span>
+                <span className="text-xs text-gray-500">{t("partner.vendor.subtitle")}</span>
+              </Link>
+            </Button>
           </div>
         )}
       </div>

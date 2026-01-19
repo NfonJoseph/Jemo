@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import type { AdminOrder, OrderStatus } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
+import { useTranslations, useLocale } from "@/lib/translations";
 import { StatusBadge, EmptyState } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,24 +16,31 @@ import {
   Search,
   ChevronRight,
   RefreshCw,
+  Truck,
+  Store,
+  Calendar,
+  XCircle,
 } from "lucide-react";
-
-const STATUS_FILTERS: { value: OrderStatus | "ALL"; label: string }[] = [
-  { value: "ALL", label: "All" },
-  { value: "PENDING_PAYMENT", label: "Pending Payment" },
-  { value: "CONFIRMED", label: "Confirmed" },
-  { value: "PREPARING", label: "Preparing" },
-  { value: "OUT_FOR_DELIVERY", label: "Out for Delivery" },
-  { value: "DELIVERED", label: "Delivered" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
 
 export default function AdminOrdersPage() {
   const toast = useToast();
+  const locale = useLocale();
+  const t = useTranslations("admin.orders");
+  const tStatus = useTranslations("statusBadge");
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const STATUS_FILTERS: { value: OrderStatus | "ALL"; label: string }[] = [
+    { value: "ALL", label: t("filters.all") },
+    { value: "PENDING", label: t("filters.pending") },
+    { value: "CONFIRMED", label: t("filters.confirmed") },
+    { value: "IN_TRANSIT", label: t("filters.inTransit") },
+    { value: "DELIVERED", label: t("filters.delivered") },
+    { value: "COMPLETED", label: t("filters.completed") },
+    { value: "CANCELLED", label: t("filters.cancelled") },
+  ];
 
   useEffect(() => {
     loadOrders();
@@ -67,11 +75,21 @@ export default function AdminOrdersPage() {
     return firstItem?.product?.vendorProfile?.businessName || "Unknown Vendor";
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <ShoppingBag className="w-6 h-6 text-jemo-orange" />
-        <h1 className="text-2xl font-bold text-gray-900">All Orders</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("title")}</h1>
       </div>
 
       {/* Filters */}
@@ -80,7 +98,7 @@ export default function AdminOrdersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
             type="search"
-            placeholder="Search by order ID or customer..."
+            placeholder={t("searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -108,7 +126,7 @@ export default function AdminOrdersPage() {
           disabled={loading}
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          Refresh
+          {t("refresh")}
         </Button>
       </div>
 
@@ -116,16 +134,16 @@ export default function AdminOrdersPage() {
       {loading ? (
         <div className="space-y-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-20" />
+            <Skeleton key={i} className="h-24" />
           ))}
         </div>
       ) : filteredOrders.length === 0 ? (
         <EmptyState
-          title="No orders found"
+          title={t("noOrdersFound")}
           description={
             searchQuery
-              ? "Try adjusting your search or filter."
-              : "No orders match the selected filter."
+              ? t("noOrdersFoundSearch")
+              : t("noOrdersFoundFilter")
           }
         />
       ) : (
@@ -135,63 +153,131 @@ export default function AdminOrdersPage() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Order
+                    {t("order")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Customer
+                    {t("customer")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">
-                    Vendor
+                    {t("vendor")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Total
+                    {t("total")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
+                    {t("status")}
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">
+                    {t("deliveryMethod")}
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden xl:table-cell">
+                    {t("assignedAgency")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">
-                    Date
+                    {t("date")}
                   </th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900 text-sm">
-                        #{order.id.slice(-8)}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="text-sm text-gray-900">{order.customer?.name || "—"}</p>
-                      <p className="text-xs text-gray-500">{order.customer?.phone || order.customer?.email}</p>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <p className="text-sm text-gray-600">{getVendorName(order)}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900 text-sm">
-                        {formatPrice(order.totalAmount)}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={order.status} />
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <p className="text-sm text-gray-500">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/admin/orders/${order.id}`}>
-                          <ChevronRight className="w-4 h-4" />
-                        </Link>
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredOrders.map((order) => {
+                  const isJemoDelivery = order.deliveryMethod === "JEMO_RIDER";
+                  const isCancelled = order.status === "CANCELLED";
+                  
+                  return (
+                    <tr key={order.id} className={`hover:bg-gray-50 ${isCancelled ? "bg-red-50/30" : ""}`}>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-900 text-sm font-mono">
+                          #{order.id.slice(-8)}
+                        </p>
+                        {order.deliveryFee !== undefined && order.deliveryFee > 0 && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            +{formatPrice(order.deliveryFee)} delivery
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-sm text-gray-900">{order.customer?.name || "—"}</p>
+                        <p className="text-xs text-gray-500">{order.customer?.phone || order.customer?.email}</p>
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        <p className="text-sm text-gray-600">{getVendorName(order)}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-900 text-sm">
+                          {formatPrice(order.totalAmount)}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={order.status} />
+                        {isCancelled && order.cancelReason && (
+                          <div className="mt-1 flex items-start gap-1">
+                            <XCircle className="w-3 h-3 text-red-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-red-600 line-clamp-2" title={order.cancelReason}>
+                              {order.cancelReason}
+                            </p>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        <span className={`inline-flex items-center gap-1 text-xs font-medium ${
+                          isJemoDelivery ? "text-purple-700" : "text-gray-600"
+                        }`}>
+                          {isJemoDelivery ? (
+                            <Truck className="w-3 h-3" />
+                          ) : (
+                            <Store className="w-3 h-3" />
+                          )}
+                          {t(`deliveryMethods.${order.deliveryMethod || "VENDOR_SELF"}`)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 hidden xl:table-cell">
+                        {order.deliveryJob?.agency ? (
+                          <div>
+                            <p className="text-sm text-gray-900 font-medium">
+                              {order.deliveryJob.agency.name}
+                            </p>
+                            <StatusBadge status={order.deliveryJob.status} className="mt-0.5" />
+                          </div>
+                        ) : isJemoDelivery ? (
+                          <span className="text-xs text-amber-600">{t("noAgency")}</span>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        <div className="space-y-0.5">
+                          <p className="text-sm text-gray-500 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {formatDate(order.createdAt)}
+                          </p>
+                          {order.confirmedAt && (
+                            <p className="text-xs text-blue-600">
+                              ✓ {formatDate(order.confirmedAt)}
+                            </p>
+                          )}
+                          {order.deliveredAt && (
+                            <p className="text-xs text-green-600">
+                              ✓ {formatDate(order.deliveredAt)}
+                            </p>
+                          )}
+                          {order.cancelledAt && (
+                            <p className="text-xs text-red-600">
+                              ✗ {formatDate(order.cancelledAt)}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Button asChild variant="ghost" size="sm">
+                          <Link href={`/${locale}/admin/orders/${order.id}`}>
+                            <ChevronRight className="w-4 h-4" />
+                          </Link>
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -200,4 +286,3 @@ export default function AdminOrdersPage() {
     </div>
   );
 }
-

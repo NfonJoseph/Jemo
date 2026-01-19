@@ -10,7 +10,7 @@ datasource db {
 enum UserRole {
   CUSTOMER
   VENDOR
-  RIDER
+  DELIVERY_AGENCY  // Admin-created only, replaces RIDER
   ADMIN
 }
 
@@ -21,12 +21,19 @@ enum KycStatus {
 }
 
 enum OrderStatus {
-  PENDING_PAYMENT
-  CONFIRMED
-  PREPARING
-  OUT_FOR_DELIVERY
-  DELIVERED
-  CANCELLED
+  PENDING           // Order created, awaiting payment confirmation (or COD)
+  CONFIRMED         // Payment confirmed / COD accepted, vendor notified
+  IN_TRANSIT        // Order picked up by delivery, on the way to customer
+  DELIVERED         // Delivered to customer
+  COMPLETED         // Customer confirmed receipt, funds released to vendor
+  CANCELLED         // Order cancelled
+}
+
+// Who cancelled the order
+enum CancelledBy {
+  CUSTOMER
+  VENDOR
+  ADMIN
 }
 
 enum PaymentStatus {
@@ -43,6 +50,13 @@ enum DeliveryStatus {
   ON_THE_WAY
   DELIVERED
   CANCELLED
+}
+
+enum DeliveryJobStatus {
+  OPEN            // Job is available for agencies to accept
+  ACCEPTED        // Agency has accepted the job
+  DELIVERED       // Successfully delivered
+  CANCELLED       // Job was cancelled
 }
 
 enum DeliveryType {
@@ -74,6 +88,12 @@ enum ProductCondition {
   REFURBISHED
 }
 
+enum PaymentPolicy {
+  POD_ONLY          // Pay on Delivery only
+  ONLINE_ONLY       // Online payment only (MTN MoMo / Orange Money)
+  MIXED_CITY_RULE   // COD for same city, Online for different cities
+}
+
 enum VendorApplicationType {
   BUSINESS
   INDIVIDUAL
@@ -95,6 +115,47 @@ enum UploadKind {
   SELFIE
 }
 
+// =============================================
+// VENDOR WALLET ENUMS
+// =============================================
+
+enum WalletTransactionType {
+  CREDIT_PENDING     // Funds credited but held (e.g., order placed)
+  CREDIT_AVAILABLE   // Funds moved from pending to available (e.g., order delivered)
+  DEBIT_WITHDRAWAL   // Funds withdrawn to vendor's mobile money
+  REVERSAL           // Reversal of a previous transaction (e.g., order cancelled)
+}
+
+enum WalletTransactionReferenceType {
+  ORDER              // Reference to an order
+  PAYOUT             // Reference to a payout request
+  ADJUSTMENT         // Manual adjustment by admin
+}
+
+enum WalletTransactionStatus {
+  PENDING            // Transaction initiated but not yet final
+  POSTED             // Transaction finalized and applied to balance
+  CANCELLED          // Transaction cancelled/reversed
+}
+
+enum PayoutStatus {
+  REQUESTED          // Vendor requested withdrawal
+  PROCESSING         // Being processed with payment provider
+  SUCCESS            // Successfully paid out
+  FAILED             // Failed to pay out
+}
+
+enum PayoutMethod {
+  CM_MOMO            // Cameroon MTN Mobile Money
+  CM_OM              // Cameroon Orange Money
+}
+
+// Order Payment Method (how customer pays)
+enum OrderPaymentMethod {
+  COD                // Cash on Delivery
+  MYCOOLPAY          // Online payment via My-CoolPay (MTN MoMo / Orange Money)
+}
+
 model User {
   id            String         @id @default(cuid())
   phone         String         @unique  // Canonical E.164 format: +237XXXXXXXXX
@@ -106,11 +167,13 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  vendorProfile       VendorProfile?
-  riderProfile        RiderProfile?
-  orders              Order[]
-  disputes            Dispute[]
-  vendorApplications  VendorApplication[]
+  vendorProfile         VendorProfile?
+  deliveryAgency        DeliveryAgency?
+  orders                Order[]
+  disputes              Dispute[]
+  vendorApplications    VendorApplication[]
+  favorites             Favorite[]
+  reviews               Review[]
 
   @@map("users")
 }
@@ -127,40 +190,117 @@ model VendorProfile {
 
   kycSubmissions KycSubmission[]
   products       Product[]
+  reviews        Review[]
 
   @@map("vendor_profiles")
 }
 
-model RiderProfile {
+// Delivery Agency - Admin-created only
+model DeliveryAgency {
   id            String      @id @default(cuid())
   userId        String      @unique
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicleType   String
-  licensePlate  String?
-  kycStatus     KycStatus   @default(PENDING)
-  isAvailable   Boolean     @default(false)
+  
+  // Agency Information
+  name          String
+  phone         String
+  email         String?
+  address       String
+  citiesCovered String[]    // Array of cities this agency can deliver to
+  
+  // Pricing (in XAF)
+  feeSameCity   Int         @default(1500)  // Fee when pickup and dropoff are in same city
+  feeOtherCity  Int         @default(2500)  // Fee when pickup and dropoff are in different cities
+  currency      String      @default("XAF")
+  
+  // Status
+  isActive      Boolean     @default(true)  // Only active agencies receive delivery jobs
+  
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  kycSubmissions KycSubmission[]
-  deliveries     Delivery[]
+  deliveries    Delivery[]
+  deliveryJobs  DeliveryJob[]
 
-  @@map("rider_profiles")
+  @@map("delivery_agencies")
+}
+
+// Delivery Job - Created when order is READY_FOR_PICKUP
+model DeliveryJob {
+  id              String              @id @default(cuid())
+  
+  // Order reference (unique - one job per order)
+  orderId         String              @unique
+  order           Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  // Pickup details (from vendor)
+  pickupAddress   String
+  pickupCity      String
+  
+  // Dropoff details (customer's delivery address)
+  dropoffAddress  String
+  dropoffCity     String
+  
+  // Delivery Fee (copied from order at job creation)
+  fee             Int?                // Fee in XAF (renamed from deliveryFee for clarity)
+  
+  // Status
+  status          DeliveryJobStatus   @default(OPEN)
+  
+  // Assignment (nullable until an agency accepts)
+  agencyId        String?             // Assigned agency (renamed from assignedAgencyId)
+  agency          DeliveryAgency?     @relation(fields: [agencyId], references: [id])
+  acceptedAt      DateTime?
+  
+  // Timestamps
+  deliveredAt     DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Audit logs
+  logs            DeliveryJobLog[]
+
+  @@map("delivery_jobs")
+}
+
+// Audit log for delivery job events
+model DeliveryJobLog {
+  id              String              @id @default(cuid())
+  
+  deliveryJobId   String
+  deliveryJob     DeliveryJob         @relation(fields: [deliveryJobId], references: [id], onDelete: Cascade)
+  
+  // Event details
+  event           String              // CREATED, ACCEPTED, STATUS_CHANGED, ADMIN_ASSIGNED, etc.
+  previousStatus  String?
+  newStatus       String?
+  
+  // Actor (who performed the action)
+  actorId         String?             // User ID who performed action
+  actorType       String              // SYSTEM, AGENCY, ADMIN, CUSTOMER
+  actorName       String?             // Name for display purposes
+  
+  // Additional metadata
+  notes           String?
+  metadata        String?             // JSON string for extra data
+  
+  createdAt       DateTime            @default(now())
+
+  @@index([deliveryJobId])
+  @@map("delivery_job_logs")
 }
 
 model KycSubmission {
-  id              String         @id @default(cuid())
-  vendorProfileId String?
-  vendorProfile   VendorProfile? @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
-  riderProfileId  String?
-  riderProfile    RiderProfile?  @relation(fields: [riderProfileId], references: [id], onDelete: Cascade)
-  documentType    String
-  documentUrl     String
-  status          KycStatus      @default(PENDING)
-  reviewedAt      DateTime?
-  reviewNotes     String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id                      String                  @id @default(cuid())
+  vendorProfileId         String?
+  vendorProfile           VendorProfile?          @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
+  documentType            String
+  documentUrl             String
+  status                  KycStatus               @default(PENDING)
+  reviewedAt              DateTime?
+  reviewNotes             String?
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
 
   @@map("kyc_submissions")
 }
@@ -224,6 +364,11 @@ model Product {
   condition           ProductCondition @default(NEW)
   authenticityConfirmed Boolean    @default(false)
   
+  // Payment Policy
+  paymentPolicy       PaymentPolicy    @default(POD_ONLY)  // Default to Pay on Delivery
+  mtnMomoEnabled      Boolean          @default(true)      // MTN Mobile Money enabled
+  orangeMoneyEnabled  Boolean          @default(true)      // Orange Money enabled
+  
   // Status & Approval
   status          ProductStatus   @default(PENDING_APPROVAL)
   rejectionReason String?         // Admin rejection comment
@@ -242,6 +387,8 @@ model Product {
 
   images     ProductImage[]
   orderItems OrderItem[]
+  favorites  Favorite[]
+  reviews    Review[]
 
   @@map("products")
 }
@@ -274,20 +421,51 @@ model AdminSettings {
 }
 
 model Order {
-  id           String      @id @default(cuid())
-  customerId   String
-  customer     User        @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  status       OrderStatus @default(PENDING_PAYMENT)
-  totalAmount  Decimal     @db.Decimal(10, 2)
+  id              String              @id @default(cuid())
+  customerId      String
+  customer        User                @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  status          OrderStatus         @default(PENDING)
+  totalAmount     Decimal             @db.Decimal(10, 2)
+  
+  // Delivery information
   deliveryAddress String
   deliveryPhone   String
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  deliveryCity    String?             // Buyer's selected delivery city
+  productCity     String?             // Snapshot of product city at order time
+  deliveryMethod  DeliveryType?       // VENDOR_DELIVERY or JEMO_RIDER
+  deliveryFee     Int?                // Delivery fee in XAF (integer)
+  deliveryFeeAgencyId String?         // Agency used for fee calculation (if Jemo Delivery)
+  deliveryFeeRule     String?         // SAME_CITY or OTHER_CITY - which pricing rule was applied
+  
+  // Cancellation info
+  cancelledBy     CancelledBy?        // Who cancelled the order
+  cancelReason    String?             // Reason for cancellation
+  
+  // Payment method used for this order
+  paymentMethod   OrderPaymentMethod  @default(COD)
+  
+  // Timestamps
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  confirmedAt     DateTime?           // When order was confirmed
+  inTransitAt     DateTime?           // When order went in transit
+  deliveredAt     DateTime?           // When order was delivered
+  completedAt     DateTime?           // When customer confirmed receipt
+  cancelledAt     DateTime?           // When order was cancelled
+  
+  // Earnings breakdown (set when order is completed)
+  // All amounts in XAF (integer stored as Decimal for consistency)
+  subtotalAmount      Decimal?        @db.Decimal(10, 2)  // Product subtotal (before delivery)
+  commissionAmount    Decimal?        @db.Decimal(10, 2)  // Jemo commission (0 for now)
+  commissionRate      Decimal?        @db.Decimal(5, 4)   // Commission rate (e.g., 0.05 for 5%)
+  vendorPayoutAmount  Decimal?        @db.Decimal(10, 2)  // Amount to vendor (subtotal - commission)
+  fundsReleasedAt     DateTime?       // When funds were credited to vendor wallet
 
-  items     OrderItem[]
-  payment   Payment?
-  delivery  Delivery?
-  disputes  Dispute[]
+  items       OrderItem[]
+  payment     Payment?
+  delivery    Delivery?
+  deliveryJob DeliveryJob?
+  disputes    Dispute[]
 
   @@map("orders")
 }
@@ -350,17 +528,17 @@ model FeePayment {
 }
 
 model Delivery {
-  id             String         @id @default(cuid())
-  orderId        String         @unique
-  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  riderProfileId String?
-  riderProfile   RiderProfile?  @relation(fields: [riderProfileId], references: [id])
-  deliveryType   DeliveryType
-  status         DeliveryStatus @default(SEARCHING_RIDER)
-  pickedUpAt     DateTime?
-  deliveredAt    DateTime?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id                      String                  @id @default(cuid())
+  orderId                 String                  @unique
+  order                   Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deliveryAgencyId        String?
+  deliveryAgency          DeliveryAgency?         @relation(fields: [deliveryAgencyId], references: [id])
+  deliveryType            DeliveryType
+  status                  DeliveryStatus          @default(SEARCHING_RIDER)
+  pickedUpAt              DateTime?
+  deliveredAt             DateTime?
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
 
   @@map("deliveries")
 }
@@ -435,4 +613,165 @@ model VendorApplicationUpload {
   
   @@unique([applicationId, kind])  // One file per kind per application
   @@map("vendor_application_uploads")
+}
+
+// =============================================
+// FAVORITES / WISHLIST
+// =============================================
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])  // One favorite per user per product
+  @@map("favorites")
+}
+
+// =============================================
+// REVIEWS
+// =============================================
+
+model Review {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendorProfileId String
+  vendorProfile   VendorProfile @relation(fields: [vendorProfileId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItemId     String        // Reference to the specific order item being reviewed
+  rating          Int           // 1-5 stars
+  comment         String?       // Optional text review
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([userId, orderItemId])  // One review per user per order item
+  @@map("reviews")
+}
+
+// =============================================
+// VENDOR WALLET INFRASTRUCTURE
+// =============================================
+
+// VendorWallet: One wallet per vendor user
+// All money amounts are stored as integer XAF (no decimals)
+model VendorWallet {
+  id               String   @id @default(cuid())
+  vendorId         String   @unique  // Links to User.id where role = VENDOR
+  
+  // Balances in integer XAF
+  availableBalance Int      @default(0)  // Funds available for withdrawal
+  pendingBalance   Int      @default(0)  // Funds held pending order completion
+  
+  // Withdrawal controls
+  withdrawalsLocked    Boolean   @default(false)  // Admin can lock for fraud prevention
+  lockReason           String?                     // Reason for locking
+  lockedAt             DateTime?                   // When locked
+  lockedById           String?                     // Admin who locked
+  lastWithdrawalAt     DateTime?                   // For rate limiting
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  transactions     WalletTransaction[]
+  payouts          Payout[]
+
+  @@map("vendor_wallets")
+}
+
+// WalletTransaction: Ledger of all wallet balance changes
+// All amounts are stored as integer XAF (positive values)
+model WalletTransaction {
+  id            String                        @id @default(cuid())
+  walletId      String
+  wallet        VendorWallet                  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  
+  // Transaction details
+  type          WalletTransactionType         // CREDIT_PENDING, CREDIT_AVAILABLE, DEBIT_WITHDRAWAL, REVERSAL
+  amount        Int                           // Amount in XAF (always positive)
+  currency      String                        @default("XAF")
+  
+  // Reference to what caused this transaction
+  referenceType WalletTransactionReferenceType // ORDER, PAYOUT, ADJUSTMENT
+  referenceId   String                        // ID of the order, payout, or adjustment
+  
+  // Status
+  status        WalletTransactionStatus       @default(PENDING)
+  
+  // Optional note (for adjustments or reversals)
+  note          String?
+  
+  createdAt     DateTime                      @default(now())
+
+  // Prevent duplicate credits for the same order/reference
+  // e.g., can't credit the same order twice with CREDIT_PENDING
+  @@unique([referenceType, referenceId, type])
+  @@index([walletId])
+  @@index([referenceId])
+  @@map("wallet_transactions")
+}
+
+// Payout: Vendor withdrawal request to mobile money
+model Payout {
+  id                String        @id @default(cuid())
+  vendorId          String        // Links to User.id where role = VENDOR
+  walletId          String
+  wallet            VendorWallet  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  
+  // Amount in integer XAF
+  amount            Int
+  
+  // Status tracking
+  status            PayoutStatus  @default(REQUESTED)
+  
+  // Payout method and destination
+  method            PayoutMethod  // CM_MOMO, CM_OM
+  destinationPhone  String        // E.164 format: +237XXXXXXXXX
+  
+  // Our unique idempotent transaction reference
+  appTransactionRef String        @unique
+  
+  // Payment provider response data
+  providerRef       String?       // Provider's transaction ID
+  providerRaw       Json?         // Full provider response as JSON
+  failureReason     String?       // Error details if failed
+  
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  processedAt       DateTime?     // When payout was completed/failed
+
+  @@index([vendorId])
+  @@index([walletId])
+  @@index([status])
+  @@map("payouts")
+}
+
+// =============================================
+// VENDOR PAYOUT PROFILE (Withdrawal destination settings)
+// =============================================
+
+// VendorPayoutProfile: Stores vendor's preferred withdrawal destination
+model VendorPayoutProfile {
+  id              String       @id @default(cuid())
+  vendorId        String       @unique  // Links to User.id where role = VENDOR
+  
+  // Preferred payout method
+  preferredMethod PayoutMethod // CM_MOMO or CM_OM
+  
+  // Destination phone in canonical E.164 format: +237XXXXXXXXX
+  phone           String
+  
+  // Full name of account holder (for verification)
+  fullName        String
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("vendor_payout_profiles")
 }

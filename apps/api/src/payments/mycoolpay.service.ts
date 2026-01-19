@@ -46,6 +46,37 @@ interface MyCoolPayStatusResponse {
   };
 }
 
+interface MyCoolPayPayoutRequest {
+  transaction_amount: number;
+  transaction_currency: string;
+  transaction_reason: string;
+  transaction_operator: string;  // CM_MOMO or CM_OM
+  app_transaction_ref: string;
+  customer_phone_number: string;
+  customer_name: string;
+}
+
+interface MyCoolPayPayoutResponse {
+  status: string;
+  code: number;
+  message: string;
+  data?: {
+    transaction_ref: string;
+    transaction_id: string;
+    status: string;
+    operator?: string;
+  };
+}
+
+export interface PayoutResult {
+  success: boolean;
+  message: string;
+  payoutId?: string;
+  transactionRef?: string;
+  providerTransactionId?: string;
+  status?: 'REQUESTED' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
+}
+
 @Injectable()
 export class MyCoolPayService {
   private readonly logger = new Logger(MyCoolPayService.name);
@@ -115,8 +146,19 @@ export class MyCoolPayService {
       throw new BadRequestException('Order not found or does not belong to you');
     }
 
-    if (order.status !== 'PENDING_PAYMENT') {
+    if (order.status !== 'PENDING') {
       throw new BadRequestException('Order is not pending payment');
+    }
+
+    // Validate amount matches order total
+    const orderTotal = Number(order.totalAmount);
+    if (dto.amount !== orderTotal) {
+      this.logger.warn(
+        `Amount mismatch for order ${dto.orderId}: requested ${dto.amount}, expected ${orderTotal}`
+      );
+      throw new BadRequestException(
+        `Payment amount (${dto.amount} XAF) does not match order total (${orderTotal} XAF)`
+      );
     }
 
     // Check for existing payment
@@ -304,7 +346,7 @@ export class MyCoolPayService {
 
     const providerStatus = data.status?.toUpperCase();
     let newStatus: PaymentStatus;
-    let orderStatus: 'CONFIRMED' | 'PENDING_PAYMENT' | undefined;
+    let orderStatus: 'CONFIRMED' | 'PENDING' | undefined;
 
     switch (providerStatus) {
       case 'SUCCESS':
@@ -317,7 +359,7 @@ export class MyCoolPayService {
       case 'CANCELLED':
       case 'REJECTED':
         newStatus = PaymentStatus.FAILED;
-        orderStatus = 'PENDING_PAYMENT';
+        orderStatus = 'PENDING';
         break;
       default:
         this.logger.warn(`Unknown webhook status: ${providerStatus}`);
@@ -341,7 +383,10 @@ export class MyCoolPayService {
       if (orderStatus) {
         await tx.order.update({
           where: { id: payment.orderId },
-          data: { status: orderStatus },
+          data: { 
+            status: orderStatus,
+            ...(orderStatus === 'CONFIRMED' && { confirmedAt: new Date() }),
+          },
         });
       }
     });
@@ -358,6 +403,253 @@ export class MyCoolPayService {
       where: { orderId },
       include: { order: true },
     });
+  }
+
+  /**
+   * Initiate a payout (send money to vendor)
+   * This is a server-to-server call using the private key
+   */
+  async initiatePayout(params: {
+    amount: number;
+    currency?: string;
+    operator: 'CM_MOMO' | 'CM_OM';
+    phone: string;
+    name: string;
+    appTransactionRef: string;
+    reason?: string;
+  }): Promise<MyCoolPayPayoutResponse> {
+    const { amount, currency = 'XAF', operator, phone, name, appTransactionRef, reason } = params;
+
+    // Map operator to MyCoolPay format
+    const transactionOperator = operator === 'CM_MOMO' ? 'MTN' : 'ORANGE';
+
+    const payoutRequest: MyCoolPayPayoutRequest = {
+      transaction_amount: amount,
+      transaction_currency: currency,
+      transaction_reason: reason || 'Vendor withdrawal',
+      transaction_operator: transactionOperator,
+      app_transaction_ref: appTransactionRef,
+      customer_phone_number: phone,
+      customer_name: name,
+    };
+
+    this.logger.log(`Initiating payout: ${amount} ${currency} to ${phone} via ${operator}`);
+
+    try {
+      const response = await this.callMyCoolPayApi<MyCoolPayPayoutResponse>(
+        'payout',
+        payoutRequest
+      );
+
+      this.logger.debug(`MyCoolPay payout response: ${JSON.stringify(response)}`);
+      return response;
+    } catch (error) {
+      this.logger.error(`MyCoolPay payout error: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Check payout status with MyCoolPay
+   */
+  async checkPayoutStatus(transactionRef: string): Promise<{
+    status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
+    providerStatus?: string;
+    message?: string;
+    providerTransactionId?: string;
+  }> {
+    try {
+      const response = await this.callMyCoolPayApi<MyCoolPayStatusResponse>(
+        'checkStatus',
+        { transaction_ref: transactionRef }
+      );
+
+      const providerStatus = response.data?.status?.toUpperCase();
+
+      let status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
+      switch (providerStatus) {
+        case 'SUCCESS':
+        case 'SUCCESSFUL':
+        case 'COMPLETED':
+          status = 'SUCCESS';
+          break;
+        case 'FAILED':
+        case 'CANCELLED':
+        case 'REJECTED':
+          status = 'FAILED';
+          break;
+        case 'PROCESSING':
+        case 'IN_PROGRESS':
+          status = 'PROCESSING';
+          break;
+        default:
+          status = 'PENDING';
+      }
+
+      return {
+        status,
+        providerStatus,
+        message: response.message,
+        providerTransactionId: response.data?.transaction_id,
+      };
+    } catch (error) {
+      this.logger.error(`Error checking payout status: ${error}`);
+      throw new InternalServerErrorException('Could not check payout status');
+    }
+  }
+
+  /**
+   * Handle payout webhook callback from MyCoolPay
+   * Returns the payout record that was updated
+   */
+  async handlePayoutWebhook(data: {
+    transaction_ref: string;
+    transaction_id?: string;
+    status: string;
+    amount?: number;
+    operator?: string;
+    customer_phone_number?: string;
+    reason?: string;
+  }): Promise<{ success: boolean; message: string; payoutId?: string }> {
+    this.logger.log(`Payout webhook received: ${JSON.stringify(data)}`);
+
+    // Find payout by app transaction ref
+    const payout = await this.prisma.payout.findUnique({
+      where: { appTransactionRef: data.transaction_ref },
+      include: { wallet: true },
+    });
+
+    if (!payout) {
+      this.logger.warn(`Payout not found for transaction_ref: ${data.transaction_ref}`);
+      return { success: false, message: 'Payout not found' };
+    }
+
+    const providerStatus = data.status?.toUpperCase();
+    
+    // Determine new status
+    let finalStatus: 'PROCESSING' | 'SUCCESS' | 'FAILED' | null = null;
+
+    switch (providerStatus) {
+      case 'SUCCESS':
+      case 'SUCCESSFUL':
+      case 'COMPLETED':
+        finalStatus = 'SUCCESS';
+        break;
+      case 'FAILED':
+      case 'CANCELLED':
+      case 'REJECTED':
+        finalStatus = 'FAILED';
+        break;
+      case 'PROCESSING':
+      case 'IN_PROGRESS':
+        finalStatus = 'PROCESSING';
+        break;
+      default:
+        this.logger.warn(`Unknown payout webhook status: ${providerStatus}`);
+        return { success: true, message: 'Status not actionable' };
+    }
+
+    // Skip if already in final state
+    if (payout.status === 'SUCCESS' || payout.status === 'FAILED') {
+      this.logger.log(`Payout ${payout.id} already in final state: ${payout.status}`);
+      return { success: true, message: 'Payout already finalized', payoutId: payout.id };
+    }
+
+    // Handle based on new status
+    if (finalStatus === 'SUCCESS') {
+      // Mark payout as successful
+      await this.prisma.$transaction(async (tx) => {
+        // Update payout
+        await tx.payout.update({
+          where: { id: payout.id },
+          data: {
+            status: 'SUCCESS',
+            providerRef: data.transaction_id || payout.providerRef,
+            providerRaw: data,
+            processedAt: new Date(),
+          },
+        });
+
+        // Mark the wallet transaction as POSTED (it should already be POSTED from initial debit)
+        await tx.walletTransaction.updateMany({
+          where: {
+            referenceType: 'PAYOUT',
+            referenceId: payout.id,
+            type: 'DEBIT_WITHDRAWAL',
+          },
+          data: {
+            status: 'POSTED',
+          },
+        });
+      });
+
+      this.logger.log(`Payout ${payout.id} marked SUCCESS`);
+    } else if (finalStatus === 'FAILED') {
+      // Mark payout as failed and refund the wallet
+      await this.prisma.$transaction(async (tx) => {
+        // Update payout
+        await tx.payout.update({
+          where: { id: payout.id },
+          data: {
+            status: 'FAILED',
+            failureReason: data.reason || 'Payout failed',
+            providerRaw: data,
+            processedAt: new Date(),
+          },
+        });
+
+        // Cancel the debit transaction
+        await tx.walletTransaction.updateMany({
+          where: {
+            referenceType: 'PAYOUT',
+            referenceId: payout.id,
+            type: 'DEBIT_WITHDRAWAL',
+          },
+          data: {
+            status: 'CANCELLED',
+            note: `Cancelled: ${data.reason || 'Payout failed'}`,
+          },
+        });
+
+        // Refund the wallet
+        await tx.vendorWallet.update({
+          where: { id: payout.walletId },
+          data: {
+            availableBalance: { increment: payout.amount },
+          },
+        });
+
+        // Create reversal transaction for audit
+        await tx.walletTransaction.create({
+          data: {
+            walletId: payout.walletId,
+            type: 'REVERSAL',
+            amount: payout.amount,
+            currency: 'XAF',
+            referenceType: 'PAYOUT',
+            referenceId: payout.id,
+            status: 'POSTED',
+            note: `Refund for failed payout: ${data.reason || 'Payout failed'}`,
+          },
+        });
+      });
+
+      this.logger.log(`Payout ${payout.id} marked FAILED, wallet refunded`);
+    } else if (finalStatus === 'PROCESSING') {
+      // Just update the status
+      await this.prisma.payout.update({
+        where: { id: payout.id },
+        data: {
+          status: 'PROCESSING',
+          providerRef: data.transaction_id || payout.providerRef,
+          providerRaw: data,
+        },
+      });
+
+      this.logger.log(`Payout ${payout.id} marked PROCESSING`);
+    }
+
+    return { success: true, message: 'Webhook processed', payoutId: payout.id };
   }
 
   /**

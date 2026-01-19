@@ -1,9 +1,11 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsEnum, IsOptional, IsString } from "class-validator";
 import { UserRole } from "@prisma/client";
 
 export class UpgradeRoleDto {
-  @IsEnum([UserRole.VENDOR, UserRole.RIDER], {
-    message: "Role must be VENDOR or RIDER",
+  // Only VENDOR is allowed for self-service upgrade
+  // DELIVERY_AGENCY accounts can only be created by administrators
+  @IsEnum([UserRole.VENDOR], {
+    message: "Only VENDOR role upgrade is allowed. Delivery agency accounts must be created by administrators.",
   })
   role!: UserRole;
 
@@ -15,14 +17,5 @@ export class UpgradeRoleDto {
   @IsString()
   @IsOptional()
   businessAddress?: string;
-
-  // Rider fields
-  @IsString()
-  @IsOptional()
-  vehicleType?: string;
-
-  @IsString()
-  @IsOptional()
-  licensePlate?: string;
 }
 

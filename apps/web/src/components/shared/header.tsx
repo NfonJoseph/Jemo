@@ -16,7 +16,7 @@ import {
   Heart,
   UserPlus,
   Store,
-  Bike,
+  Truck,
   Shield,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -140,15 +140,15 @@ export function Header() {
                   </Link>
                 </Button>
               )}
-              {isLoggedIn && user?.role === "RIDER" && (
+              {isLoggedIn && user?.role === "DELIVERY_AGENCY" && (
                 <Button
                   variant="ghost"
                   size="icon"
                   asChild
                   className="text-white hover:bg-white/20"
                 >
-                  <Link href={`/${locale}/rider`} aria-label={t("riderDashboard")}>
-                    <Bike className="w-5 h-5" />
+                  <Link href={`/${locale}/rider`} aria-label={t("deliveryAgencyDashboard")}>
+                    <Truck className="w-5 h-5" />
                   </Link>
                 </Button>
               )}
@@ -214,14 +214,14 @@ export function Header() {
                             {t("vendorDashboard")}
                           </Link>
                         )}
-                        {user?.role === "RIDER" && (
+                        {user?.role === "DELIVERY_AGENCY" && (
                           <Link
                             href={`/${locale}/rider`}
                             className="flex items-center gap-2 px-4 py-2.5 text-sm text-jemo-orange font-medium hover:bg-orange-50"
                             onClick={() => setAccountMenuOpen(false)}
                           >
-                            <Bike className="w-4 h-4" />
-                            {t("riderDashboard")}
+                            <Truck className="w-4 h-4" />
+                            {t("deliveryAgencyDashboard")}
                           </Link>
                         )}
                         {user?.role === "ADMIN" && (
@@ -315,15 +315,15 @@ export function Header() {
                     </Link>
                   </Button>
                 )}
-                {isLoggedIn && user?.role === "RIDER" && (
+                {isLoggedIn && user?.role === "DELIVERY_AGENCY" && (
                   <Button
                     variant="ghost"
                     size="icon"
                     asChild
                     className="text-white hover:bg-white/20 h-9 w-9"
                   >
-                    <Link href={`/${locale}/rider`} aria-label={t("riderDashboard")}>
-                      <Bike className="w-5 h-5" />
+                    <Link href={`/${locale}/rider`} aria-label={t("deliveryAgencyDashboard")}>
+                      <Truck className="w-5 h-5" />
                     </Link>
                   </Button>
                 )}
@@ -485,14 +485,14 @@ export function Header() {
                     {t("vendorDashboard")}
                   </Link>
                 )}
-                {user?.role === "RIDER" && (
+                {user?.role === "DELIVERY_AGENCY" && (
                   <Link
                     href={`/${locale}/rider`}
                     className="flex items-center gap-3 py-3 px-2 text-jemo-orange font-medium hover:bg-orange-50 rounded-md transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Bike className="w-4 h-4" />
-                    {t("riderDashboard")}
+                    <Truck className="w-4 h-4" />
+                    {t("deliveryAgencyDashboard")}
                   </Link>
                 )}
                 {user?.role === "ADMIN" && (

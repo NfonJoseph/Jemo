@@ -127,10 +127,10 @@ export class AdminUsersService {
             kycStatus: true,
           },
         },
-        riderProfile: {
+        deliveryAgency: {
           select: {
             id: true,
-            kycStatus: true,
+            isActive: true,
           },
         },
         vendorApplications: {
@@ -163,7 +163,7 @@ export class AdminUsersService {
       updatedAt: user.updatedAt,
       vendorStatus: user.vendorProfile?.kycStatus || null,
       vendorBusinessName: user.vendorProfile?.businessName || null,
-      riderStatus: user.riderProfile?.kycStatus || null,
+      deliveryAgencyActive: user.deliveryAgency?.isActive ?? null,
       latestVendorApplication: user.vendorApplications[0] || null,
       ordersCount: user._count.orders,
       disputesCount: user._count.disputes,
@@ -198,14 +198,10 @@ export class AdminUsersService {
             },
           },
         },
-        riderProfile: {
+        deliveryAgency: {
           include: {
             deliveries: {
               select: { id: true },
-            },
-            kycSubmissions: {
-              orderBy: { createdAt: 'desc' },
-              take: 5,
             },
           },
         },
@@ -251,7 +247,7 @@ export class AdminUsersService {
         ordersCount: user.orders?.length || 0,
         disputesCount: user.disputes?.length || 0,
         productsCount: user.vendorProfile?.products?.length || 0,
-        deliveriesCount: user.riderProfile?.deliveries?.length || 0,
+        deliveriesCount: user.deliveryAgency?.deliveries?.length || 0,
       },
     };
   }
@@ -416,13 +412,15 @@ export class AdminUsersService {
   }
 
   /**
-   * Generate temporary password
+   * Generate a temporary password for password reset
    */
   private generateTempPassword(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    const length = 12;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let password = '';
-    for (let i = 0; i < 10; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * charset.length);
+      password += charset[randomIndex];
     }
     return password;
   }

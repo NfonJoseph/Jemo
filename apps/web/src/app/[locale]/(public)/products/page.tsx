@@ -38,7 +38,8 @@ export default function ProductsPage() {
         params.set("q", query);
       }
 
-      const data = await api.get<Product[]>(`/products?${params}`);
+      // Pass auth: true so backend can return isFavorited status for logged-in users
+      const data = await api.get<Product[]>(`/products?${params}`, true);
       setProducts(data);
       setHasMore(data.length === ITEMS_PER_PAGE);
     } catch (err) {
@@ -136,7 +137,6 @@ export default function ProductsPage() {
                 <ProductCard
                   key={product.id}
                   product={product}
-                  onAddToCart={addItem}
                 />
               ))}
             </div>

@@ -32,14 +32,16 @@ export class KycApprovedGuard implements CanActivate {
       return true;
     }
 
-    if (user.role === UserRole.RIDER) {
-      const riderProfile = await this.prisma.riderProfile.findUnique({
+    if (user.role === UserRole.DELIVERY_AGENCY) {
+      // Delivery agencies are admin-created with pre-approved status
+      // Just check that they exist and are active
+      const deliveryAgency = await this.prisma.deliveryAgency.findUnique({
         where: { userId: user.id },
-        select: { kycStatus: true },
+        select: { isActive: true },
       });
 
-      if (!riderProfile || riderProfile.kycStatus !== KycStatus.APPROVED) {
-        throw new ForbiddenException("KYC approval required to perform this action");
+      if (!deliveryAgency || !deliveryAgency.isActive) {
+        throw new ForbiddenException("Your delivery agency account is not active");
       }
 
       return true;

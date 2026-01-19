@@ -36,35 +36,9 @@ export class KycService {
       return submission;
     }
 
-    if (role === UserRole.RIDER) {
-      const riderProfile = await this.prisma.riderProfile.findUnique({
-        where: { userId },
-      });
-
-      if (!riderProfile) {
-        throw new NotFoundException("Rider profile not found");
-      }
-
-      const submission = await this.prisma.kycSubmission.create({
-        data: {
-          riderProfileId: riderProfile.id,
-          documentType: dto.documentType,
-          documentUrl: dto.documentUrl,
-          status: KycStatus.PENDING,
-        },
-      });
-
-      if (riderProfile.kycStatus !== KycStatus.PENDING) {
-        await this.prisma.riderProfile.update({
-          where: { id: riderProfile.id },
-          data: { kycStatus: KycStatus.PENDING },
-        });
-      }
-
-      return submission;
-    }
-
-    throw new BadRequestException("Only vendors and riders can submit KYC");
+    // Delivery agencies are admin-created with pre-approved status
+    // They don't need to submit KYC
+    throw new BadRequestException("Only vendors can submit KYC. Delivery agencies are created by admin.");
   }
 
   async getMyKyc(userId: string, role: UserRole) {
@@ -89,28 +63,8 @@ export class KycService {
       };
     }
 
-    if (role === UserRole.RIDER) {
-      const riderProfile = await this.prisma.riderProfile.findUnique({
-        where: { userId },
-        include: {
-          kycSubmissions: {
-            orderBy: { createdAt: "desc" },
-            take: 1,
-          },
-        },
-      });
-
-      if (!riderProfile) {
-        throw new NotFoundException("Rider profile not found");
-      }
-
-      return {
-        kycStatus: riderProfile.kycStatus,
-        latestSubmission: riderProfile.kycSubmissions[0] || null,
-      };
-    }
-
-    throw new BadRequestException("Only vendors and riders have KYC");
+    // Delivery agencies are admin-created with pre-approved status
+    throw new BadRequestException("Only vendors have KYC. Delivery agencies are created by admin.");
   }
 }
 

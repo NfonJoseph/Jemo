@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
+import { useTranslations, useLocale } from "@/lib/translations";
 import type { VendorProduct, VendorOrder, KycResponse, KycStatus } from "@/lib/types";
 import { StatusBadge } from "@/components/shared";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,8 @@ import {
   Clock,
   XCircle,
   FileCheck,
+  Wallet,
+  Settings,
 } from "lucide-react";
 
 interface DashboardData {
@@ -25,6 +28,8 @@ interface DashboardData {
 }
 
 export default function VendorDashboardPage() {
+  const t = useTranslations("vendorDashboard");
+  const locale = useLocale();
   const [data, setData] = useState<DashboardData>({
     kycStatus: "NOT_SUBMITTED",
     productCount: 0,
@@ -94,13 +99,26 @@ export default function VendorDashboardPage() {
   const getKycMessage = () => {
     switch (data.kycStatus) {
       case "APPROVED":
-        return "Your account is verified. You can publish products and receive orders.";
+        return t("kyc.approvedMessage");
       case "REJECTED":
-        return "Your KYC was rejected. Please resubmit with valid documents.";
+        return t("kyc.rejectedMessage");
       case "PENDING":
-        return "Your KYC is under review. This usually takes 24-48 hours.";
+        return t("kyc.pendingMessage");
       default:
-        return "Complete your KYC verification to publish products and receive orders.";
+        return t("kyc.notSubmittedMessage");
+    }
+  };
+
+  const getKycTitle = () => {
+    switch (data.kycStatus) {
+      case "APPROVED":
+        return t("kyc.approvedTitle");
+      case "REJECTED":
+        return t("kyc.rejectedTitle");
+      case "PENDING":
+        return t("kyc.pendingTitle");
+      default:
+        return t("kyc.notSubmittedTitle");
     }
   };
 
@@ -121,7 +139,7 @@ export default function VendorDashboardPage() {
   if (data.kycStatus !== "APPROVED") {
     return (
       <div className="space-y-6">
-        <h1 className="text-h1 text-gray-900">Vendor Dashboard</h1>
+        <h1 className="text-h1 text-gray-900">{t("title")}</h1>
 
         {/* KYC Blocked Banner */}
         <div
@@ -136,11 +154,7 @@ export default function VendorDashboardPage() {
           <div className="flex flex-col items-center text-center">
             {getKycIcon()}
             <h2 className="font-semibold text-gray-900 mt-4 mb-2">
-              {data.kycStatus === "PENDING"
-                ? "KYC Verification Pending"
-                : data.kycStatus === "REJECTED"
-                ? "KYC Verification Rejected"
-                : "KYC Verification Required"}
+              {getKycTitle()}
             </h2>
             <p className="text-sm text-gray-600 mb-4 max-w-md">
               {getKycMessage()}
@@ -148,18 +162,18 @@ export default function VendorDashboardPage() {
 
             {data.kycStatus === "NOT_SUBMITTED" && (
               <Button asChild className="bg-jemo-orange hover:bg-jemo-orange/90">
-                <Link href="/account/kyc">
+                <Link href={`/${locale}/account/kyc`}>
                   <FileCheck className="w-4 h-4 mr-2" />
-                  Submit KYC Documents
+                  {t("kyc.submitButton")}
                 </Link>
               </Button>
             )}
 
             {data.kycStatus === "REJECTED" && (
               <Button asChild className="bg-jemo-orange hover:bg-jemo-orange/90">
-                <Link href="/account/kyc">
+                <Link href={`/${locale}/account/kyc`}>
                   <FileCheck className="w-4 h-4 mr-2" />
-                  Resubmit KYC Documents
+                  {t("kyc.resubmitButton")}
                 </Link>
               </Button>
             )}
@@ -167,7 +181,7 @@ export default function VendorDashboardPage() {
             {data.kycStatus === "PENDING" && (
               <div className="flex items-center gap-2 text-amber-700 bg-amber-100 px-4 py-2 rounded-lg">
                 <Clock className="w-4 h-4" />
-                <span className="text-sm font-medium">Awaiting admin review</span>
+                <span className="text-sm font-medium">{t("kyc.awaitingReview")}</span>
               </div>
             )}
           </div>
@@ -181,11 +195,11 @@ export default function VendorDashboardPage() {
     <div className="space-y-6">
       {/* Page Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-h1 text-gray-900">Vendor Dashboard</h1>
+        <h1 className="text-h1 text-gray-900">{t("title")}</h1>
         <Button asChild className="bg-jemo-orange hover:bg-jemo-orange/90">
-          <Link href="/vendor/products/new">
+          <Link href={`/${locale}/vendor/products/new`}>
             <Plus className="w-4 h-4 mr-2" />
-            Add Product
+            {t("addProduct")}
           </Link>
         </Button>
       </div>
@@ -196,11 +210,11 @@ export default function VendorDashboardPage() {
           <CheckCircle2 className="w-8 h-8 text-status-success" />
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <h2 className="font-semibold text-gray-900">KYC Status</h2>
+              <h2 className="font-semibold text-gray-900">{t("kyc.title")}</h2>
               <StatusBadge status="APPROVED" />
             </div>
             <p className="text-sm text-gray-700">
-              Your account is verified. You can publish products and receive orders.
+              {t("kyc.approvedMessage")}
             </p>
           </div>
         </div>
@@ -210,49 +224,61 @@ export default function VendorDashboardPage() {
       <div className="grid grid-cols-2 gap-4">
         {/* Products Card */}
         <Link
-          href="/vendor/products"
+          href={`/${locale}/vendor/products`}
           className="card p-4 hover:shadow-lg transition-shadow"
         >
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 bg-blue-100 rounded-lg">
               <Package className="w-5 h-5 text-blue-600" />
             </div>
-            <span className="text-sm text-gray-500">Products</span>
+            <span className="text-sm text-gray-500">{t("products")}</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{data.productCount}</p>
-          <p className="text-sm text-gray-500 mt-1">Total products</p>
+          <p className="text-sm text-gray-500 mt-1">{t("totalProducts")}</p>
         </Link>
 
         {/* Orders Card */}
         <Link
-          href="/vendor/orders"
+          href={`/${locale}/vendor/orders`}
           className="card p-4 hover:shadow-lg transition-shadow"
         >
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 bg-purple-100 rounded-lg">
               <ShoppingBag className="w-5 h-5 text-purple-600" />
             </div>
-            <span className="text-sm text-gray-500">Orders</span>
+            <span className="text-sm text-gray-500">{t("orders")}</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{data.orderCount}</p>
-          <p className="text-sm text-gray-500 mt-1">Total orders</p>
+          <p className="text-sm text-gray-500 mt-1">{t("totalOrders")}</p>
         </Link>
       </div>
 
       {/* Quick Actions */}
       <div className="card p-4">
-        <h2 className="text-h3 text-gray-900 mb-4">Quick Actions</h2>
+        <h2 className="text-h3 text-gray-900 mb-4">{t("quickActions")}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Button asChild variant="outline" className="justify-start h-auto py-3">
-            <Link href="/vendor/products/new">
+            <Link href={`/${locale}/vendor/products/new`}>
               <Plus className="w-4 h-4 mr-2" />
-              Add New Product
+              {t("addNewProduct")}
             </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start h-auto py-3">
-            <Link href="/vendor/orders">
+            <Link href={`/${locale}/vendor/orders`}>
               <ShoppingBag className="w-4 h-4 mr-2" />
-              View Orders
+              {t("viewOrders")}
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start h-auto py-3">
+            <Link href={`/${locale}/vendor/wallet`}>
+              <Wallet className="w-4 h-4 mr-2" />
+              {t("walletAndEarnings")}
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start h-auto py-3">
+            <Link href={`/${locale}/vendor/payout-settings`}>
+              <Settings className="w-4 h-4 mr-2" />
+              {t("payoutSettings")}
             </Link>
           </Button>
         </div>
