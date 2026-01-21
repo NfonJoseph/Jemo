@@ -6,6 +6,7 @@ import { VendorWalletService } from "../wallet/vendor-wallet.service";
 import { AgencyWalletService } from "../wallet/agency-wallet.service";
 import { DeliveryQuoteService } from "../delivery/delivery-quote.service";
 import { PaymentIntentService } from "../payments/payment-intent.service";
+import { AdminSettingsService } from "../admin/settings/admin-settings.service";
 import { validateOrderTransition } from "../common/utils/status-transitions";
 
 /**
@@ -31,6 +32,7 @@ export class OrdersService {
     private readonly agencyWalletService: AgencyWalletService,
     private readonly deliveryQuoteService: DeliveryQuoteService,
     private readonly paymentIntentService: PaymentIntentService,
+    private readonly adminSettingsService: AdminSettingsService,
   ) {}
 
   /**
@@ -347,6 +349,10 @@ export class OrdersService {
         );
         this.logger.log(`PaymentIntent ${validatedPaymentIntent.paymentIntentId} marked as used for order ${order.id}`);
 
+        // Get processing fee settings
+        const processingFees = await this.adminSettingsService.getProcessingFees();
+        this.logger.log(`Processing fees: vendorFeePercent=${processingFees.vendorFeePercent}%, riderFeePercent=${processingFees.riderFeePercent}%`);
+
         // Credit wallets with PENDING funds (not withdrawable until delivery confirmed)
         const productAmount = totalAmount - deliveryFee;
         const vendorId = products[0].vendorProfile?.userId;
@@ -356,43 +362,63 @@ export class OrdersService {
           throw new BadRequestException("Could not determine vendor for this order");
         }
 
-        // Credit vendor wallet with product amount (PENDING)
+        // Calculate vendor processing fee
+        const vendorProcessingFee = this.adminSettingsService.calculateProcessingFee(
+          productAmount,
+          processingFees.vendorFeePercent
+        );
+        const vendorNetAmount = productAmount - vendorProcessingFee;
+
+        // Credit vendor wallet with net product amount (after processing fee deduction)
         await this.vendorWalletService.creditPending(
           vendorId,
-          productAmount,
+          vendorNetAmount,
           'ORDER' as any, // WalletTransactionReferenceType.ORDER
           order.id,
-          `Sale: ${products[0].name} (Order #${order.id.slice(-8)})`
+          `Sale: ${products[0].name} (Order #${order.id.slice(-8)})${vendorProcessingFee > 0 ? ` - ${vendorProcessingFee} XAF platform fee` : ''}`
         );
         this.logger.log(
-          `Credited ${productAmount} XAF to vendor ${vendorId} wallet (pending) for order ${order.id}`
+          `Credited ${vendorNetAmount} XAF to vendor ${vendorId} wallet (pending) for order ${order.id}. Processing fee: ${vendorProcessingFee} XAF (${processingFees.vendorFeePercent}%)`
         );
 
         // Credit delivery fee based on delivery method
         if (deliveryFee > 0) {
+          // Calculate rider processing fee
+          const riderProcessingFee = this.adminSettingsService.calculateProcessingFee(
+            deliveryFee,
+            processingFees.riderFeePercent
+          );
+          const riderNetDeliveryFee = deliveryFee - riderProcessingFee;
+
           if (deliveryMethod === DeliveryType.JEMO_RIDER && deliveryFeeAgencyId) {
-            // Jemo delivery: credit agency wallet with delivery fee
+            // Jemo delivery: credit agency wallet with net delivery fee
             await this.agencyWalletService.creditDeliveryFee(
               deliveryFeeAgencyId,
               order.id,
-              deliveryFee,
-              `Delivery fee for order #${order.id.slice(-8)}`
+              riderNetDeliveryFee,
+              `Delivery fee for order #${order.id.slice(-8)}${riderProcessingFee > 0 ? ` - ${riderProcessingFee} XAF platform fee` : ''}`
             );
             this.logger.log(
-              `Credited ${deliveryFee} XAF to agency ${deliveryFeeAgencyId} wallet (pending) for order ${order.id}`
+              `Credited ${riderNetDeliveryFee} XAF to agency ${deliveryFeeAgencyId} wallet (pending) for order ${order.id}. Processing fee: ${riderProcessingFee} XAF (${processingFees.riderFeePercent}%)`
             );
           } else if (deliveryMethod === DeliveryType.VENDOR_DELIVERY) {
-            // Vendor self-delivery: credit vendor wallet with delivery fee too
-            // Use a modified referenceId to avoid unique constraint conflict
+            // Vendor self-delivery: credit vendor wallet with net delivery fee too
+            // For vendor self-delivery, use vendor fee percent on delivery fee as well
+            const vendorDeliveryProcessingFee = this.adminSettingsService.calculateProcessingFee(
+              deliveryFee,
+              processingFees.vendorFeePercent
+            );
+            const vendorNetDeliveryFee = deliveryFee - vendorDeliveryProcessingFee;
+
             await this.vendorWalletService.creditPending(
               vendorId,
-              deliveryFee,
+              vendorNetDeliveryFee,
               'ORDER' as any,
               `${order.id}_delivery_fee`,
-              `Delivery fee: ${products[0].name} (Order #${order.id.slice(-8)})`
+              `Delivery fee: ${products[0].name} (Order #${order.id.slice(-8)})${vendorDeliveryProcessingFee > 0 ? ` - ${vendorDeliveryProcessingFee} XAF platform fee` : ''}`
             );
             this.logger.log(
-              `Credited ${deliveryFee} XAF to vendor ${vendorId} wallet (pending delivery fee) for order ${order.id}`
+              `Credited ${vendorNetDeliveryFee} XAF to vendor ${vendorId} wallet (pending delivery fee) for order ${order.id}. Processing fee: ${vendorDeliveryProcessingFee} XAF (${processingFees.vendorFeePercent}%)`
             );
           }
         }

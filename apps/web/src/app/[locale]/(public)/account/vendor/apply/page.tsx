@@ -42,9 +42,23 @@ export interface VendorApplication {
   }>;
 }
 
-// Step configuration
-const BUSINESS_STEPS = ["type", "fee", "details", "review"];
-const INDIVIDUAL_STEPS = ["type", "fee", "details", "kyc", "capture", "review"];
+interface FeeSettings {
+  enabled: boolean;
+  amount: number;
+}
+
+// Step configuration - dynamically generated based on fee settings
+function getBusinessSteps(feeEnabled: boolean): string[] {
+  return feeEnabled 
+    ? ["type", "fee", "details", "review"]
+    : ["type", "details", "review"];
+}
+
+function getIndividualSteps(feeEnabled: boolean): string[] {
+  return feeEnabled
+    ? ["type", "fee", "details", "kyc", "capture", "review"]
+    : ["type", "details", "kyc", "capture", "review"];
+}
 
 export default function VendorApplyPage() {
   const router = useRouter();
@@ -59,6 +73,7 @@ export default function VendorApplyPage() {
   const [applicationType, setApplicationType] = useState<"BUSINESS" | "INDIVIDUAL" | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [feeSettings, setFeeSettings] = useState<FeeSettings>({ enabled: true, amount: 5000 });
 
   // Redirect if not logged in
   useEffect(() => {
@@ -67,7 +82,7 @@ export default function VendorApplyPage() {
     }
   }, [authLoading, isLoggedIn, router, locale]);
 
-  // Fetch existing application
+  // Fetch existing application and fee settings
   const fetchApplication = useCallback(async () => {
     // Wait for auth to be ready
     if (!isLoggedIn || authLoading) {
@@ -76,6 +91,14 @@ export default function VendorApplyPage() {
     }
     
     try {
+      // Fetch fee settings (public endpoint, no auth required)
+      try {
+        const feeData = await api.get<FeeSettings>("/settings/vendor-application-fee");
+        setFeeSettings(feeData);
+      } catch (feeErr) {
+        console.warn("Failed to fetch fee settings, using defaults");
+      }
+
       const data = await api.get<VendorApplication | null>("/vendor-applications/me", true);
       if (data) {
         setApplication(data);
@@ -88,27 +111,42 @@ export default function VendorApplyPage() {
         } else if (data.status === "REJECTED") {
           setCurrentStep(0); // Allow resubmission
         } else {
-          // Determine step based on progress
-          if (!data.applicationFeePaid) {
-            setCurrentStep(1);
+          // Determine step based on progress and fee settings
+          // Get the appropriate steps for this application type
+          const currentSteps = data.type === "BUSINESS" 
+            ? getBusinessSteps(feeSettings.enabled) 
+            : getIndividualSteps(feeSettings.enabled);
+          
+          // Find the index of each step type
+          const feeStepIndex = currentSteps.indexOf("fee");
+          const detailsStepIndex = currentSteps.indexOf("details");
+          const kycStepIndex = currentSteps.indexOf("kyc");
+          const captureStepIndex = currentSteps.indexOf("capture");
+          const reviewStepIndex = currentSteps.indexOf("review");
+
+          // If fee is enabled and not paid, go to fee step
+          if (feeSettings.enabled && !data.applicationFeePaid && feeStepIndex >= 0) {
+            setCurrentStep(feeStepIndex);
           } else if (data.type === "BUSINESS") {
             if (!data.businessName) {
-              setCurrentStep(2);
+              setCurrentStep(detailsStepIndex);
             } else {
               const hasTaxDoc = data.uploads?.some(u => u.kind === "TAXPAYER_DOC");
-              setCurrentStep(hasTaxDoc ? 3 : 2);
+              setCurrentStep(hasTaxDoc ? reviewStepIndex : detailsStepIndex);
             }
           } else {
             if (!data.fullNameOnId) {
-              setCurrentStep(2);
+              setCurrentStep(detailsStepIndex);
             } else {
               const hasAllKyc = ["ID_FRONT", "ID_BACK", "SELFIE"].every(
                 kind => data.uploads?.some(u => u.kind === kind)
               );
               if (hasAllKyc) {
-                setCurrentStep(5);
+                setCurrentStep(reviewStepIndex);
+              } else if (captureStepIndex >= 0) {
+                setCurrentStep(captureStepIndex);
               } else {
-                setCurrentStep(4);
+                setCurrentStep(kycStepIndex >= 0 ? kycStepIndex : detailsStepIndex);
               }
             }
           }
@@ -127,10 +165,12 @@ export default function VendorApplyPage() {
     }
   }, [isLoggedIn, authLoading, fetchApplication]);
 
-  // Get steps array based on application type
+  // Get steps array based on application type and fee settings
   const getSteps = () => {
     if (!applicationType) return ["type"];
-    return applicationType === "BUSINESS" ? BUSINESS_STEPS : INDIVIDUAL_STEPS;
+    return applicationType === "BUSINESS" 
+      ? getBusinessSteps(feeSettings.enabled) 
+      : getIndividualSteps(feeSettings.enabled);
   };
 
   const steps = getSteps();

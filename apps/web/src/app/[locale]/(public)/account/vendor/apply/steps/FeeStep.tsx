@@ -37,6 +37,11 @@ interface PaymentStatusResponse {
   message?: string;
 }
 
+interface FeeSettings {
+  enabled: boolean;
+  amount: number;
+}
+
 export function FeeStep({ application, onPaid }: FeeStepProps) {
   const t = useTranslations("vendorWizard");
   const toast = useToast();
@@ -49,9 +54,23 @@ export function FeeStep({ application, onPaid }: FeeStepProps) {
   const [paymentRef, setPaymentRef] = useState<string | null>(null);
   const [ussdCode, setUssdCode] = useState<string | null>(null);
   const [pollAttempts, setPollAttempts] = useState(0);
+  const [feeAmount, setFeeAmount] = useState<number>(5000);
 
   const MAX_POLL_ATTEMPTS = 24; // 2 minutes (24 * 5 seconds)
   const POLL_INTERVAL = 5000; // 5 seconds
+
+  // Fetch fee settings
+  useEffect(() => {
+    async function fetchFeeSettings() {
+      try {
+        const settings = await api.get<FeeSettings>("/settings/vendor-application-fee");
+        setFeeAmount(settings.amount);
+      } catch {
+        console.warn("Failed to fetch fee settings, using default");
+      }
+    }
+    fetchFeeSettings();
+  }, []);
 
   // Pre-fill phone from user data
   useEffect(() => {
@@ -176,7 +195,7 @@ export function FeeStep({ application, onPaid }: FeeStepProps) {
             <div className="flex-1">
               <div className="flex items-baseline gap-2 mb-2">
                 <span className="text-2xl font-bold text-gray-900">
-                  {t("fee.amount")}
+                  {feeAmount.toLocaleString()} XAF
                 </span>
                 <span className="text-green-600 font-medium">
                   {t("fee.paid")}
@@ -276,7 +295,7 @@ export function FeeStep({ application, onPaid }: FeeStepProps) {
           <div className="flex-1">
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-2xl font-bold text-gray-900">
-                {t("fee.amount")}
+                {feeAmount.toLocaleString()} XAF
               </span>
             </div>
             <p className="text-gray-500">

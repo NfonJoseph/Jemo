@@ -251,6 +251,7 @@ export class VendorOrdersService {
         },
         deliveryJob: true,
       },
+      // Note: deliveryFeeAgencyId is a scalar field, automatically included
     });
 
     if (!order) {
@@ -286,13 +287,37 @@ export class VendorOrdersService {
         const pickupCity = normalizeCity(order.productCity || product?.city || 'Unknown');
         const dropoffCity = normalizeCity(order.deliveryCity || 'Unknown');
 
+        // Get the agency that was used for fee calculation (stored on order during creation)
+        // This ensures the job goes directly to the agency in the product's city
+        const assignedAgencyId = order.deliveryFeeAgencyId;
+        let agencyName = 'Unknown';
+
+        if (assignedAgencyId) {
+          const agency = await tx.deliveryAgency.findUnique({
+            where: { id: assignedAgencyId },
+            select: { name: true, isActive: true },
+          });
+          
+          if (agency && agency.isActive) {
+            agencyName = agency.name;
+          } else {
+            // Agency no longer active, log warning but still create job
+            this.logger.warn(`[confirmOrder] Agency ${assignedAgencyId} is no longer active. Job will be created as OPEN for any available agency.`);
+          }
+        }
+
         if (process.env.NODE_ENV !== 'production') {
           this.logger.debug(`[confirmOrder] Creating DeliveryJob for order ${orderId}`);
           this.logger.debug(`  - pickupCity (normalized): "${pickupCity}" (raw: "${order.productCity || product?.city}")`);
           this.logger.debug(`  - dropoffCity (normalized): "${dropoffCity}" (raw: "${order.deliveryCity}")`);
           this.logger.debug(`  - fee: ${order.deliveryFee} XAF`);
+          this.logger.debug(`  - assignedAgencyId: ${assignedAgencyId || 'none'} (${agencyName})`);
         }
 
+        // If we have a valid assigned agency, directly assign the job to them
+        // Otherwise, create as OPEN for any available agency to accept
+        const hasValidAgency = assignedAgencyId && agencyName !== 'Unknown';
+        
         const newJob = await tx.deliveryJob.create({
           data: {
             orderId,
@@ -301,7 +326,10 @@ export class VendorOrdersService {
             dropoffAddress: order.deliveryAddress,
             dropoffCity: dropoffCity,
             fee: order.deliveryFee,
-            status: DeliveryJobStatus.OPEN,
+            // Directly assign to the agency from order calculation if available
+            agencyId: hasValidAgency ? assignedAgencyId : null,
+            status: hasValidAgency ? DeliveryJobStatus.ACCEPTED : DeliveryJobStatus.OPEN,
+            acceptedAt: hasValidAgency ? new Date() : null,
           },
         });
 
@@ -310,16 +338,19 @@ export class VendorOrdersService {
           data: {
             deliveryJobId: newJob.id,
             event: "CREATED",
-            newStatus: DeliveryJobStatus.OPEN,
+            newStatus: hasValidAgency ? DeliveryJobStatus.ACCEPTED : DeliveryJobStatus.OPEN,
             actorId: vendorProfile.id,
             actorType: "VENDOR",
             actorName: vendorProfile.businessName,
-            notes: `Job created for order ${orderId}. Pickup: ${pickupCity}. Dropoff: ${dropoffCity}. Fee: ${order.deliveryFee} XAF`,
+            notes: hasValidAgency 
+              ? `Job created and auto-assigned to ${agencyName} for order ${orderId}. Pickup: ${pickupCity}. Dropoff: ${dropoffCity}. Fee: ${order.deliveryFee} XAF`
+              : `Job created for order ${orderId}. Pickup: ${pickupCity}. Dropoff: ${dropoffCity}. Fee: ${order.deliveryFee} XAF`,
           },
         });
 
         this.logger.log(
-          `[DeliveryJob Created] orderId=${orderId}, jobId=${newJob.id}, pickupCity=${pickupCity}, dropoffCity=${dropoffCity}, fee=${order.deliveryFee} XAF`
+          `[DeliveryJob Created] orderId=${orderId}, jobId=${newJob.id}, pickupCity=${pickupCity}, dropoffCity=${dropoffCity}, fee=${order.deliveryFee} XAF, ` +
+          `assignedTo=${hasValidAgency ? agencyName : 'awaiting acceptance'}`
         );
       } else if (process.env.NODE_ENV !== 'production') {
         if (order.deliveryMethod !== DeliveryType.JEMO_RIDER) {

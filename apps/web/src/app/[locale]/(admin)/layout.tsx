@@ -20,6 +20,7 @@ import {
   Package,
   Users,
   Truck,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations, useLocale } from "@/lib/translations";
@@ -44,6 +45,7 @@ export default function AdminLayout({
     { label: t("nav.orders"), href: `/${locale}/admin/orders`, icon: ShoppingBag },
     { label: t("nav.payments"), href: `/${locale}/admin/payments`, icon: CreditCard },
     { label: t("nav.disputes"), href: `/${locale}/admin/disputes`, icon: AlertTriangle },
+    { label: t("nav.settings"), href: `/${locale}/admin/settings`, icon: Settings },
   ];
 
   useEffect(() => {

@@ -1145,90 +1145,6 @@
     "somethingWentWrong": "Une erreur s'est produite. Veuillez réessayer.",
     "agencyNotActive": "Votre agence n'est pas active. Contactez l'administrateur pour obtenir de l'aide."
   },
-  "admin": {
-    "dashboard": "Administration",
-    "kycReview": "Revue KYC",
-    "orders": "Commandes",
-    "payments": "Paiements",
-    "disputes": "Litiges",
-    "users": "Utilisateurs",
-    "settings": "Paramètres",
-    "approve": "Approuver",
-    "reject": "Rejeter",
-    "pending": "En attente",
-    "noSubmissions": "Aucune soumission",
-    "reviewNotes": "Notes de révision",
-    "kyc": {
-      "title": "Soumissions KYC",
-      "documentType": "Type de document",
-      "submittedAt": "Soumis le",
-      "status": "Statut",
-      "actions": "Actions"
-    },
-    "dispute": {
-      "title": "Litiges",
-      "reason": "Raison",
-      "resolution": "Résolution",
-      "resolve": "Résoudre"
-    },
-    "payouts": {
-      "title": "Retraits Vendeurs",
-      "subtitle": "Surveiller et gérer les demandes de retrait des vendeurs",
-      "stats": {
-        "total": "Total Retraits",
-        "requested": "Demandés",
-        "processing": "En cours",
-        "success": "Réussis",
-        "failed": "Échoués",
-        "totalPaidOut": "Total Payé",
-        "lockedWallets": "Portefeuilles Bloqués"
-      },
-      "table": {
-        "vendor": "Vendeur",
-        "amount": "Montant",
-        "method": "Méthode",
-        "destination": "Destination",
-        "status": "Statut",
-        "date": "Date",
-        "actions": "Actions"
-      },
-      "filters": {
-        "all": "Tous les Statuts",
-        "requested": "Demandé",
-        "processing": "En cours",
-        "success": "Réussi",
-        "failed": "Échoué"
-      },
-      "actions": {
-        "viewDetails": "Voir Détails",
-        "retry": "Réessayer",
-        "lockVendor": "Bloquer Retraits",
-        "unlockVendor": "Débloquer Retraits"
-      },
-      "details": {
-        "title": "Détails du Retrait",
-        "vendorInfo": "Informations Vendeur",
-        "walletInfo": "Informations Portefeuille",
-        "transactions": "Transactions Liées",
-        "providerResponse": "Réponse Fournisseur"
-      },
-      "lock": {
-        "title": "Bloquer les Retraits du Vendeur",
-        "reason": "Raison du blocage",
-        "reasonPlaceholder": "Entrez la raison (min 10 caractères)...",
-        "confirm": "Bloquer les Retraits",
-        "success": "Retraits du vendeur bloqués avec succès",
-        "unlockSuccess": "Retraits du vendeur débloqués avec succès"
-      },
-      "retry": {
-        "confirm": "Êtes-vous sûr de vouloir réessayer ce retrait ?",
-        "success": "Nouvelle tentative de retrait initiée avec succès",
-        "error": "Échec de la nouvelle tentative de retrait"
-      },
-      "noPayouts": "Aucun retrait trouvé",
-      "noPayoutsDesc": "Les demandes de retrait des vendeurs apparaîtront ici."
-    }
-  },
   "kyc": {
     "title": "Vérification KYC",
     "status": "Statut",
@@ -1341,7 +1257,36 @@
       "kyc": "Vérification KYC",
       "orders": "Commandes",
       "payments": "Paiements",
-      "disputes": "Litiges"
+      "disputes": "Litiges",
+      "settings": "Paramètres"
+    },
+    "settings": {
+      "title": "Paramètres de la Plateforme",
+      "subtitle": "Gérer les frais et la configuration de la plateforme",
+      "loadError": "Échec du chargement des paramètres",
+      "saveSuccess": "Paramètres enregistrés avec succès",
+      "saveError": "Échec de l'enregistrement des paramètres",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "vendorApplicationFee": {
+        "title": "Frais de Candidature Vendeur",
+        "description": "Frais facturés lorsque les vendeurs postulent pour vendre sur la plateforme",
+        "amountLabel": "Montant des Frais"
+      },
+      "processingFees": {
+        "title": "Frais de Traitement des Transactions",
+        "description": "Pourcentage déduit des gains des vendeurs et livreurs pour chaque transaction en ligne",
+        "vendorFeeLabel": "Frais Vendeur",
+        "vendorFeeHelp": "Pourcentage déduit des ventes de produits",
+        "riderFeeLabel": "Frais Livreur/Agence",
+        "riderFeeHelp": "Pourcentage déduit des frais de livraison"
+      },
+      "deliveryPricing": {
+        "title": "Tarification Livraison Jemo",
+        "description": "Frais de livraison par défaut pour le réseau de livreurs Jemo",
+        "sameTownLabel": "Livraison Même Ville",
+        "otherCityLabel": "Livraison Autre Ville"
+      }
     },
     "products": {
       "title": "Gestion des produits",

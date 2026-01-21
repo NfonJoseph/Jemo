@@ -16,6 +16,7 @@ import {
 import { normalizeCameroonPhone } from '../common/utils/phone';
 import { CreateApplicationDto, UpdateBusinessDetailsDto, UpdateIndividualDetailsDto } from './dto/create-application.dto';
 import { STORAGE_SERVICE, StorageService } from '../storage/storage.interface';
+import { AdminSettingsService } from '../admin/settings/admin-settings.service';
 import * as path from 'path';
 
 @Injectable()
@@ -25,6 +26,7 @@ export class VendorApplicationService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(STORAGE_SERVICE) private readonly storageService: StorageService,
+    private readonly adminSettingsService: AdminSettingsService,
   ) {}
 
   /**
@@ -347,8 +349,12 @@ export class VendorApplicationService {
       throw new BadRequestException('Application already approved');
     }
 
-    // Validate payment
-    if (!application.applicationFeePaid) {
+    // Check if application fee is enabled
+    const feeSettings = await this.adminSettingsService.getVendorApplicationFee();
+    logger.log(`Fee settings: enabled=${feeSettings.enabled}, amount=${feeSettings.amount}`);
+
+    // Validate payment only if fee is enabled
+    if (feeSettings.enabled && !application.applicationFeePaid) {
       logger.warn('Validation failed: Application fee not paid');
       throw new BadRequestException('Application fee not paid');
     }

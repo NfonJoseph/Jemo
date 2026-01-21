@@ -1145,90 +1145,6 @@
     "somethingWentWrong": "Something went wrong. Please try again.",
     "agencyNotActive": "Your agency is not active. Contact admin for assistance."
   },
-  "admin": {
-    "dashboard": "Admin Dashboard",
-    "kycReview": "KYC Review",
-    "orders": "Orders",
-    "payments": "Payments",
-    "disputes": "Disputes",
-    "users": "Users",
-    "settings": "Settings",
-    "approve": "Approve",
-    "reject": "Reject",
-    "pending": "Pending",
-    "noSubmissions": "No submissions",
-    "reviewNotes": "Review Notes",
-    "kyc": {
-      "title": "KYC Submissions",
-      "documentType": "Document Type",
-      "submittedAt": "Submitted At",
-      "status": "Status",
-      "actions": "Actions"
-    },
-    "dispute": {
-      "title": "Disputes",
-      "reason": "Reason",
-      "resolution": "Resolution",
-      "resolve": "Resolve"
-    },
-    "payouts": {
-      "title": "Vendor Payouts",
-      "subtitle": "Monitor and manage vendor withdrawal requests",
-      "stats": {
-        "total": "Total Payouts",
-        "requested": "Requested",
-        "processing": "Processing",
-        "success": "Successful",
-        "failed": "Failed",
-        "totalPaidOut": "Total Paid Out",
-        "lockedWallets": "Locked Wallets"
-      },
-      "table": {
-        "vendor": "Vendor",
-        "amount": "Amount",
-        "method": "Method",
-        "destination": "Destination",
-        "status": "Status",
-        "date": "Date",
-        "actions": "Actions"
-      },
-      "filters": {
-        "all": "All Statuses",
-        "requested": "Requested",
-        "processing": "Processing",
-        "success": "Success",
-        "failed": "Failed"
-      },
-      "actions": {
-        "viewDetails": "View Details",
-        "retry": "Retry Payout",
-        "lockVendor": "Lock Withdrawals",
-        "unlockVendor": "Unlock Withdrawals"
-      },
-      "details": {
-        "title": "Payout Details",
-        "vendorInfo": "Vendor Information",
-        "walletInfo": "Wallet Information",
-        "transactions": "Related Transactions",
-        "providerResponse": "Provider Response"
-      },
-      "lock": {
-        "title": "Lock Vendor Withdrawals",
-        "reason": "Reason for locking",
-        "reasonPlaceholder": "Enter reason (min 10 characters)...",
-        "confirm": "Lock Withdrawals",
-        "success": "Vendor withdrawals locked successfully",
-        "unlockSuccess": "Vendor withdrawals unlocked successfully"
-      },
-      "retry": {
-        "confirm": "Are you sure you want to retry this payout?",
-        "success": "Payout retry initiated successfully",
-        "error": "Failed to retry payout"
-      },
-      "noPayouts": "No payouts found",
-      "noPayoutsDesc": "Vendor payout requests will appear here."
-    }
-  },
   "kyc": {
     "title": "KYC Verification",
     "status": "Status",
@@ -1341,7 +1257,36 @@
       "kyc": "KYC Review",
       "orders": "Orders",
       "payments": "Payments",
-      "disputes": "Disputes"
+      "disputes": "Disputes",
+      "settings": "Settings"
+    },
+    "settings": {
+      "title": "Platform Settings",
+      "subtitle": "Manage fees and platform configuration",
+      "loadError": "Failed to load settings",
+      "saveSuccess": "Settings saved successfully",
+      "saveError": "Failed to save settings",
+      "save": "Save Changes",
+      "saving": "Saving...",
+      "vendorApplicationFee": {
+        "title": "Vendor Application Fee",
+        "description": "Fee charged when vendors apply to sell on the platform",
+        "amountLabel": "Fee Amount"
+      },
+      "processingFees": {
+        "title": "Transaction Processing Fees",
+        "description": "Percentage deducted from vendor and rider earnings for each online transaction",
+        "vendorFeeLabel": "Vendor Fee",
+        "vendorFeeHelp": "Percentage deducted from product sales",
+        "riderFeeLabel": "Rider/Agency Fee",
+        "riderFeeHelp": "Percentage deducted from delivery fees"
+      },
+      "deliveryPricing": {
+        "title": "Jemo Delivery Pricing",
+        "description": "Default delivery fees for Jemo rider network",
+        "sameTownLabel": "Same Town Delivery",
+        "otherCityLabel": "Other City Delivery"
+      }
     },
     "products": {
       "title": "Products Management",
