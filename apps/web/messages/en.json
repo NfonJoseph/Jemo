@@ -144,10 +144,13 @@
     "babyKids": "Baby & Kids",
     "healthBeauty": "Health & Beauty",
     "foodGrocery": "Food & Grocery",
+    "supermarket": "Supermarket",
     "gaming": "Gaming",
     "sportsOutdoors": "Sports & Outdoors",
     "automotive": "Automotive",
     "booksStationery": "Books & Stationery",
+    "phonesTablets": "Phones & Tablets",
+    "appliances": "Appliances",
     "other": "Other"
   },
   "hero": {
@@ -223,6 +226,7 @@
     "phonePlaceholder": "e.g. 670123456",
     "placeOrder": "Place Order",
     "placingOrder": "Placing...",
+    "payNow": "Pay Now",
     "loginToOrder": "Login to place your order",
     "loginToContinue": "Login to continue",
     "selectCityForDelivery": "Select a city to see delivery options",
@@ -644,6 +648,7 @@
     "dashboard": "Dashboard",
     "available": "Available Deliveries",
     "myDeliveries": "My Deliveries",
+    "wallet": "Wallet",
     "settings": "Settings",
     "pricing": "Pricing",
     "delivery": "Delivery",
@@ -661,6 +666,7 @@
       "activeJobs": "Active Jobs",
       "completed": "Completed",
       "totalEarnings": "Total Earnings",
+      "wallet": "Wallet",
       "coverageArea": "Your Coverage Area",
       "activeDelivery": "Active Delivery",
       "noActiveDeliveries": "No Active Deliveries",
@@ -931,6 +937,8 @@
     "orderConfirmed": "Order confirmed successfully!",
     "orderCancelled": "Order cancelled successfully",
     "markedInTransit": "Order marked as in transit",
+    "markedDelivered": "Order marked as delivered!",
+    "markAsDelivered": "Mark as Delivered",
     "confirmError": "Failed to confirm order",
     "cancelError": "Failed to cancel order",
     "updateError": "Failed to update order",
@@ -966,6 +974,7 @@
       "CONFIRMED_JEMO": "Waiting for a delivery agency to accept",
       "CONFIRMED_VENDOR": "Mark as in transit when you ship",
       "IN_TRANSIT": "Waiting for delivery",
+      "IN_TRANSIT_VENDOR": "Mark as delivered once the customer receives the order",
       "DELIVERED": "Waiting for customer to confirm receipt",
       "COMPLETED": "No further action needed",
       "CANCELLED": "No further action needed"
@@ -1001,6 +1010,96 @@
       "vehicleType": "Vehicle Type",
       "licensePlate": "License Plate",
       "submitApplication": "Submit Application"
+    },
+    "wallet": {
+      "title": "My Wallet",
+      "subtitle": "Track your delivery earnings",
+      "availableBalance": "Available Balance",
+      "availableBalanceHelp": "Ready for withdrawal",
+      "pendingBalance": "Pending Balance",
+      "pendingBalanceHelp": "Awaiting customer confirmation",
+      "totalEarnings": "Total Earnings",
+      "totalEarningsHelp": "Lifetime delivery earnings",
+      "recentTransactions": "Recent Transactions",
+      "noTransactions": "No transactions yet",
+      "noTransactionsHelp": "Complete deliveries to start earning",
+      "withdraw": "Withdraw",
+      "payoutSettings": "Payout Settings",
+      "minBalanceRequired": "Minimum {min} XAF required to withdraw",
+      "transactionTypes": {
+        "creditPending": "Delivery Fee (Pending)",
+        "creditAvailable": "Delivery Fee (Released)",
+        "debitWithdrawal": "Withdrawal",
+        "reversal": "Reversal"
+      },
+      "referenceTypes": {
+        "order": "Order",
+        "payout": "Payout",
+        "adjustment": "Adjustment"
+      },
+      "noPayoutProfile": {
+        "title": "Payout Settings Required",
+        "description": "Set up your payout profile to enable withdrawals.",
+        "action": "Set Up Payout"
+      },
+      "withdrawModal": {
+        "title": "Withdraw Funds",
+        "destination": "Withdrawal will be sent to:",
+        "availableBalance": "Available Balance",
+        "amountLabel": "Amount to withdraw (XAF)",
+        "amountPlaceholder": "Enter amount",
+        "minAmount": "Minimum: {min} XAF",
+        "confirm": "Confirm Withdrawal",
+        "processing": "Processing...",
+        "success": "Withdrawal initiated! You will receive the funds shortly.",
+        "error": "Withdrawal failed. Please try again.",
+        "errors": {
+          "amountRequired": "Please enter an amount",
+          "amountTooLow": "Minimum withdrawal is {min} XAF",
+          "insufficientBalance": "Insufficient balance"
+        }
+      },
+      "howItWorks": {
+        "title": "How Your Earnings Work",
+        "step1": "When you complete a delivery, the fee is added as pending balance",
+        "step2": "Once the customer confirms receipt, the funds become available",
+        "step3": "Available funds can be withdrawn to your mobile money account",
+        "step4": "Withdrawals are processed automatically via MyCoolPay"
+      }
+    },
+    "payoutSettings": {
+      "title": "Payout Settings",
+      "subtitle": "Configure how you receive your earnings",
+      "backToWallet": "Back to Wallet",
+      "profileConfigured": "Payout profile configured",
+      "preferredMethod": "Preferred Payment Method",
+      "methodDescription": "Select how you want to receive your earnings",
+      "mtnDescription": "Receive via MTN Mobile Money",
+      "orangeDescription": "Receive via Orange Money",
+      "phoneNumber": "Phone Number",
+      "phoneHelp": "The mobile money number where you'll receive payments",
+      "fullName": "Account Holder Name",
+      "fullNamePlaceholder": "Enter the name on your mobile money account",
+      "fullNameHelp": "This must match the name on your mobile money account",
+      "saveProfile": "Save Profile",
+      "updateProfile": "Update Profile",
+      "saving": "Saving...",
+      "saveSuccess": "Payout profile saved successfully!",
+      "saveError": "Failed to save payout profile",
+      "loadError": "Failed to load payout profile",
+      "errors": {
+        "methodRequired": "Please select a payment method",
+        "phoneRequired": "Phone number is required",
+        "phoneInvalid": "Invalid Cameroon mobile number (must start with 6)",
+        "nameRequired": "Account holder name is required",
+        "nameTooShort": "Name is too short"
+      },
+      "importantInfo": {
+        "title": "Important Information",
+        "item1": "Ensure your phone number is registered for mobile money",
+        "item2": "The account holder name must match exactly to receive payments",
+        "item3": "Withdrawals are processed automatically within minutes"
+      }
     }
   },
   "riderJobs": {
@@ -1403,5 +1502,28 @@
     "OPEN": "Open",
     "ACCEPTED": "Accepted",
     "RESOLVED": "Resolved"
+  },
+  "payment": {
+    "title": "Secure Payment",
+    "productAmount": "Product",
+    "deliveryFee": "Delivery",
+    "amountToPay": "Total to pay",
+    "selectOperator": "Select your payment method",
+    "phoneNumber": "Mobile Money Phone Number",
+    "phoneHint": "Enter your mobile money phone number",
+    "enterPhoneNumber": "Please enter your phone number",
+    "invalidPhoneNumber": "Please enter a valid Cameroon phone number",
+    "pay": "Pay Now",
+    "initiating": "Initiating...",
+    "paymentInitFailed": "Failed to initiate payment. Please try again.",
+    "waitingForApproval": "Waiting for Payment Approval",
+    "checkYourPhone": "Please approve the payment request on your phone",
+    "dialUssd": "Or dial this USSD code to complete payment:",
+    "doNotClose": "Do not close this window while payment is processing",
+    "paymentSuccess": "Payment Successful!",
+    "creatingOrder": "Creating your order...",
+    "paymentFailed": "Payment Failed",
+    "paymentTimeout": "Payment timed out. Please try again.",
+    "tryAgain": "Try Again"
   }
 }

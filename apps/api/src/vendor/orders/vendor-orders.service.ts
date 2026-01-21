@@ -118,28 +118,38 @@ export class VendorOrdersService {
       throw new NotFoundException("Order not found");
     }
 
+    // Get delivery type from the first item
+    const deliveryType = order.items[0]?.product.deliveryType;
+    const isVendorSelfDelivery = deliveryType === DeliveryType.VENDOR_DELIVERY;
+
     // Vendor-allowed status transitions
     // In the simplified workflow:
     // - PENDING: Vendor can confirm the order (COD) or it's confirmed via payment webhook (online)
     // - CONFIRMED: Vendor can hand off to delivery (IN_TRANSIT) or cancel
-    // - IN_TRANSIT: Delivery agency handles this
-    // - DELIVERED: Delivery agency sets this
-    // - COMPLETED: Customer confirms receipt
+    // - IN_TRANSIT: For self-delivery, vendor can mark as DELIVERED. For Jemo Delivery, agency handles it.
+    // - DELIVERED: Customer confirms receipt (COMPLETED)
+    // - COMPLETED: Terminal state
     // - CANCELLED: Can be cancelled by vendor/admin
     const vendorAllowedTransitions: Record<OrderStatus, OrderStatus[]> = {
       [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],  // Vendor can confirm (COD) or cancel
       [OrderStatus.CONFIRMED]: [OrderStatus.IN_TRANSIT, OrderStatus.CANCELLED],  // Vendor can hand off to delivery or cancel
-      [OrderStatus.IN_TRANSIT]: [],  // Delivery agency handles this
+      [OrderStatus.IN_TRANSIT]: isVendorSelfDelivery ? [OrderStatus.DELIVERED] : [],  // Vendor can mark DELIVERED only for self-delivery
       [OrderStatus.DELIVERED]: [],
       [OrderStatus.COMPLETED]: [],
       [OrderStatus.CANCELLED]: [],
     };
 
     // Block vendors from setting IN_TRANSIT directly for Jemo Delivery - delivery agency handles it
-    const deliveryType = order.items[0]?.product.deliveryType;
     if (newStatus === OrderStatus.IN_TRANSIT && deliveryType === DeliveryType.JEMO_RIDER) {
       throw new ForbiddenException(
         "For Jemo Delivery orders, wait for the delivery agency to pick up the order."
+      );
+    }
+
+    // Block vendors from setting DELIVERED for Jemo Delivery orders - delivery agency handles it
+    if (newStatus === OrderStatus.DELIVERED && deliveryType === DeliveryType.JEMO_RIDER) {
+      throw new ForbiddenException(
+        "For Jemo Delivery orders, the delivery agency will mark the order as delivered."
       );
     }
 
@@ -163,6 +173,12 @@ export class VendorOrdersService {
       // Set inTransitAt when transitioning to IN_TRANSIT
       if (newStatus === OrderStatus.IN_TRANSIT) {
         updateData.inTransitAt = new Date();
+      }
+
+      // Set deliveredAt when vendor marks self-delivery order as DELIVERED
+      if (newStatus === OrderStatus.DELIVERED) {
+        updateData.deliveredAt = new Date();
+        this.logger.log(`Order ${orderId} marked as delivered by vendor (self-delivery)`);
       }
       
       // Set cancelledAt and cancelledBy when cancelling

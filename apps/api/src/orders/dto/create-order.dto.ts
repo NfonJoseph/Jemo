@@ -43,5 +43,9 @@ export class CreateOrderDto {
   @IsNumber()
   @Min(0)
   deliveryFee?: number;  // Calculated delivery fee
+
+  @IsOptional()
+  @IsString()
+  paymentIntentRef?: string;  // Required for ONLINE payment products (validates pre-paid intent)
 }
 

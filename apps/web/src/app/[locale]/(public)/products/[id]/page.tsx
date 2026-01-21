@@ -41,7 +41,9 @@ import {
   Package,
   ChevronDown,
   Search,
+  Smartphone,
 } from "lucide-react";
+import { PaymentModal } from "@/components/shared/payment-modal";
 
 // Review type
 interface Review {
@@ -305,6 +307,10 @@ export default function ProductDetailPage() {
   const [reviewPage, setReviewPage] = useState(1);
   const [hasMoreReviews, setHasMoreReviews] = useState(false);
   const [showVendorReviews, setShowVendorReviews] = useState(true);
+  
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pendingPaymentIntentRef, setPendingPaymentIntentRef] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -475,7 +481,7 @@ export default function ProductDetailPage() {
     setShowOrderForm(true);
   };
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = async (paymentIntentRef?: string) => {
     if (!product || !isLoggedIn) return;
 
     if (!deliveryAddress.trim()) {
@@ -506,14 +512,29 @@ export default function ProductDetailPage() {
       }
     }
 
+    // For ONLINE payment, show payment modal first if no paymentIntentRef provided
+    if (paymentMethodResult.method === 'ONLINE' && !paymentIntentRef) {
+      setShowPaymentModal(true);
+      return;
+    }
+
     setOrdering(true);
 
-    // Determine payment method based on product policy
+    // Determine payment method based on product policy and intent
+    // If we have a paymentIntentRef, we know it's an ONLINE payment that was completed
     const paymentMethod = paymentMethodResult.method === 'ONLINE' 
       ? (paymentMethodResult.mtnMomoEnabled ? 'MTN_MOBILE_MONEY' : 'ORANGE_MONEY')
       : 'COD';
 
-    const orderPayload = {
+    const orderPayload: {
+      items: { productId: string; quantity: number }[];
+      paymentMethod: string;
+      deliveryAddress: string;
+      deliveryPhone: string;
+      deliveryCity?: string;
+      deliveryFee?: number;
+      paymentIntentRef?: string;
+    } = {
       items: [{ productId: product.id, quantity: Number(quantity) }],
       paymentMethod,
       deliveryAddress: deliveryAddress.trim(),
@@ -524,27 +545,40 @@ export default function ProductDetailPage() {
       deliveryFee: product.deliveryType !== "JEMO_RIDER" ? (deliveryFee?.fee || 0) : undefined,
     };
 
+    // Include payment intent reference for ONLINE payments
+    if (paymentIntentRef) {
+      orderPayload.paymentIntentRef = paymentIntentRef;
+    }
+
     try {
       const order = await api.post<Order>("/orders", orderPayload, true);
-      toast.success("Order placed successfully!");
+      toast.success(locale === "fr" ? "Commande passée avec succès!" : "Order placed successfully!");
       router.push(`/${locale}/orders/${order.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 401) {
-          toast.error("Please login to place an order.");
+          toast.error(locale === "fr" ? "Veuillez vous connecter pour passer une commande." : "Please login to place an order.");
           router.push(`/${locale}/login`);
           return;
         }
         
         const data = err.data as { message?: string | string[] };
         const message = Array.isArray(data?.message) ? data.message[0] : data?.message;
-        toast.error(message || "Could not place order. Please try again.");
+        toast.error(message || (locale === "fr" ? "Impossible de passer la commande. Veuillez réessayer." : "Could not place order. Please try again."));
       } else {
-        toast.error("Something went wrong. Please try again.");
+        toast.error(locale === "fr" ? "Une erreur s'est produite. Veuillez réessayer." : "Something went wrong. Please try again.");
       }
     } finally {
       setOrdering(false);
     }
+  };
+
+  // Callback when payment succeeds
+  const handlePaymentSuccess = (paymentIntentRef: string) => {
+    setShowPaymentModal(false);
+    setPendingPaymentIntentRef(paymentIntentRef);
+    // Now place the order with the payment intent reference
+    handlePlaceOrder(paymentIntentRef);
   };
 
   const images = product?.images?.length
@@ -970,13 +1004,18 @@ export default function ProductDetailPage() {
                             </Button>
                             <Button
                               className="flex-1 bg-jemo-orange hover:bg-jemo-orange/90"
-                              onClick={handlePlaceOrder}
+                              onClick={() => handlePlaceOrder()}
                               disabled={ordering || !deliveryAddress.trim() || !deliveryPhone.trim() || !paymentMethodResult.method}
                             >
                               {ordering ? (
                                 <>
                                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                   {t("placingOrder")}
+                                </>
+                              ) : paymentMethodResult.method === 'ONLINE' ? (
+                                <>
+                                  <CreditCard className="w-4 h-4 mr-2" />
+                                  {t("payNow")}
                                 </>
                               ) : (
                                 t("placeOrder")
@@ -1143,7 +1182,7 @@ export default function ProductDetailPage() {
               </Button>
               <Button
                 className="flex-1 bg-jemo-orange hover:bg-jemo-orange/90"
-                onClick={handlePlaceOrder}
+                onClick={() => handlePlaceOrder()}
                 disabled={ordering || !deliveryAddress.trim() || !deliveryPhone.trim()}
               >
                 {ordering ? <Loader2 className="w-5 h-5 animate-spin" /> : t("placeOrder")}
@@ -1183,6 +1222,28 @@ export default function ProductDetailPage() {
           </>
         )}
       </div>
+
+      {/* Payment Modal for ONLINE payments */}
+      {product && user && selectedCity && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={handlePaymentSuccess}
+          productId={product.id}
+          productName={product.name}
+          quantity={quantity}
+          deliveryCity={selectedCity}
+          productSubtotal={productTotal}
+          deliveryFee={deliveryTotal}
+          totalAmount={grandTotal}
+          customerName={user.name || user.email}
+          customerEmail={user.email}
+          availableOperators={{
+            mtnMomo: paymentMethodResult.mtnMomoEnabled,
+            orangeMoney: paymentMethodResult.orangeMoneyEnabled,
+          }}
+        />
+      )}
     </div>
   );
 }

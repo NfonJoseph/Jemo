@@ -40,6 +40,7 @@ export default function VendorOrderDetailPage() {
   const [confirming, setConfirming] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [markingDelivered, setMarkingDelivered] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
@@ -127,6 +128,27 @@ export default function VendorOrderDetailPage() {
       }
     } finally {
       setUpdating(false);
+    }
+  };
+
+  // Mark as delivered (for vendor self-delivery)
+  const handleMarkDelivered = async () => {
+    if (!order) return;
+
+    setMarkingDelivered(true);
+    try {
+      await api.patch(`/vendor/orders/${order.id}/status`, { status: "DELIVERED" }, true);
+      setOrder((prev) => (prev ? { ...prev, status: "DELIVERED" } : null));
+      toast.success(t("markedDelivered"));
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const data = err.data as { message?: string };
+        toast.error(data?.message || t("updateError"));
+      } else {
+        toast.error(t("somethingWentWrong"));
+      }
+    } finally {
+      setMarkingDelivered(false);
     }
   };
 
@@ -383,12 +405,36 @@ export default function VendorOrderDetailPage() {
 
       {order.status === "IN_TRANSIT" && (
         <div className="card p-4 bg-purple-50 border-purple-200">
-          <div className="flex items-center gap-3">
-            <Truck className="w-5 h-5 text-purple-600" />
-            <div>
-              <p className="font-medium text-purple-900">{t("statusHints.IN_TRANSIT")}</p>
-              <p className="text-sm text-purple-700">{t("nextActions.IN_TRANSIT")}</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Truck className="w-5 h-5 text-purple-600" />
+              <div>
+                <p className="font-medium text-purple-900">{t("statusHints.IN_TRANSIT")}</p>
+                <p className="text-sm text-purple-700">
+                  {isJemoDelivery ? t("nextActions.IN_TRANSIT") : t("nextActions.IN_TRANSIT_VENDOR")}
+                </p>
+              </div>
             </div>
+            {/* Show Mark as Delivered button for vendor self-delivery */}
+            {!isJemoDelivery && (
+              <Button
+                onClick={handleMarkDelivered}
+                disabled={markingDelivered}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {markingDelivered ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {t("updating")}
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    {t("markAsDelivered")}
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       )}

@@ -144,10 +144,13 @@
     "babyKids": "Bébé & Enfants",
     "healthBeauty": "Santé & Beauté",
     "foodGrocery": "Alimentation",
+    "supermarket": "Supermarché",
     "gaming": "Jeux Vidéo",
     "sportsOutdoors": "Sports & Plein air",
     "automotive": "Automobile",
     "booksStationery": "Livres & Papeterie",
+    "phonesTablets": "Téléphones & Tablettes",
+    "appliances": "Électroménager",
     "other": "Autre"
   },
   "hero": {
@@ -223,6 +226,7 @@
     "phonePlaceholder": "ex: 670123456",
     "placeOrder": "Passer la commande",
     "placingOrder": "En cours...",
+    "payNow": "Payer maintenant",
     "loginToOrder": "Connectez-vous pour commander",
     "loginToContinue": "Se connecter",
     "selectCityForDelivery": "Sélectionnez une ville pour voir les options de livraison",
@@ -644,6 +648,7 @@
     "dashboard": "Tableau de bord",
     "available": "Livraisons disponibles",
     "myDeliveries": "Mes Livraisons",
+    "wallet": "Portefeuille",
     "settings": "Paramètres",
     "pricing": "Tarification",
     "delivery": "Livraison",
@@ -661,6 +666,7 @@
       "activeJobs": "Emplois Actifs",
       "completed": "Terminées",
       "totalEarnings": "Revenus Totaux",
+      "wallet": "Portefeuille",
       "coverageArea": "Votre Zone de Couverture",
       "activeDelivery": "Livraison Active",
       "noActiveDeliveries": "Aucune Livraison Active",
@@ -931,6 +937,8 @@
     "orderConfirmed": "Commande confirmée avec succès !",
     "orderCancelled": "Commande annulée avec succès",
     "markedInTransit": "Commande marquée en transit",
+    "markedDelivered": "Commande marquée comme livrée !",
+    "markAsDelivered": "Marquer comme Livrée",
     "confirmError": "Échec de la confirmation de la commande",
     "cancelError": "Échec de l'annulation de la commande",
     "updateError": "Échec de la mise à jour de la commande",
@@ -966,6 +974,7 @@
       "CONFIRMED_JEMO": "En attente qu'une agence de livraison accepte",
       "CONFIRMED_VENDOR": "Marquez en transit lors de l'expédition",
       "IN_TRANSIT": "En attente de livraison",
+      "IN_TRANSIT_VENDOR": "Marquez comme livrée une fois que le client reçoit la commande",
       "DELIVERED": "En attente de confirmation du client",
       "COMPLETED": "Aucune action requise",
       "CANCELLED": "Aucune action requise"
@@ -1001,6 +1010,96 @@
       "vehicleType": "Type de véhicule",
       "licensePlate": "Plaque d'immatriculation",
       "submitApplication": "Soumettre la candidature"
+    },
+    "wallet": {
+      "title": "Mon Portefeuille",
+      "subtitle": "Suivez vos gains de livraison",
+      "availableBalance": "Solde Disponible",
+      "availableBalanceHelp": "Prêt pour le retrait",
+      "pendingBalance": "Solde en Attente",
+      "pendingBalanceHelp": "En attente de confirmation client",
+      "totalEarnings": "Gains Totaux",
+      "totalEarningsHelp": "Gains de livraison à vie",
+      "recentTransactions": "Transactions Récentes",
+      "noTransactions": "Aucune transaction pour le moment",
+      "noTransactionsHelp": "Effectuez des livraisons pour commencer à gagner",
+      "withdraw": "Retirer",
+      "payoutSettings": "Paramètres de paiement",
+      "minBalanceRequired": "Minimum {min} XAF requis pour retirer",
+      "transactionTypes": {
+        "creditPending": "Frais de livraison (En attente)",
+        "creditAvailable": "Frais de livraison (Libérés)",
+        "debitWithdrawal": "Retrait",
+        "reversal": "Annulation"
+      },
+      "referenceTypes": {
+        "order": "Commande",
+        "payout": "Paiement",
+        "adjustment": "Ajustement"
+      },
+      "noPayoutProfile": {
+        "title": "Paramètres de paiement requis",
+        "description": "Configurez votre profil de paiement pour activer les retraits.",
+        "action": "Configurer le paiement"
+      },
+      "withdrawModal": {
+        "title": "Retirer des fonds",
+        "destination": "Le retrait sera envoyé à:",
+        "availableBalance": "Solde disponible",
+        "amountLabel": "Montant à retirer (XAF)",
+        "amountPlaceholder": "Entrez le montant",
+        "minAmount": "Minimum: {min} XAF",
+        "confirm": "Confirmer le retrait",
+        "processing": "Traitement...",
+        "success": "Retrait initié! Vous recevrez les fonds sous peu.",
+        "error": "Échec du retrait. Veuillez réessayer.",
+        "errors": {
+          "amountRequired": "Veuillez entrer un montant",
+          "amountTooLow": "Le retrait minimum est de {min} XAF",
+          "insufficientBalance": "Solde insuffisant"
+        }
+      },
+      "howItWorks": {
+        "title": "Comment fonctionnent vos gains",
+        "step1": "Lorsque vous effectuez une livraison, les frais sont ajoutés en solde en attente",
+        "step2": "Une fois que le client confirme la réception, les fonds deviennent disponibles",
+        "step3": "Les fonds disponibles peuvent être retirés sur votre compte mobile money",
+        "step4": "Les retraits sont traités automatiquement via MyCoolPay"
+      }
+    },
+    "payoutSettings": {
+      "title": "Paramètres de paiement",
+      "subtitle": "Configurez comment vous recevez vos gains",
+      "backToWallet": "Retour au portefeuille",
+      "profileConfigured": "Profil de paiement configuré",
+      "preferredMethod": "Mode de paiement préféré",
+      "methodDescription": "Sélectionnez comment vous souhaitez recevoir vos gains",
+      "mtnDescription": "Recevoir via MTN Mobile Money",
+      "orangeDescription": "Recevoir via Orange Money",
+      "phoneNumber": "Numéro de téléphone",
+      "phoneHelp": "Le numéro mobile money où vous recevrez les paiements",
+      "fullName": "Nom du titulaire du compte",
+      "fullNamePlaceholder": "Entrez le nom sur votre compte mobile money",
+      "fullNameHelp": "Ceci doit correspondre au nom sur votre compte mobile money",
+      "saveProfile": "Enregistrer le profil",
+      "updateProfile": "Mettre à jour le profil",
+      "saving": "Enregistrement...",
+      "saveSuccess": "Profil de paiement enregistré avec succès!",
+      "saveError": "Échec de l'enregistrement du profil de paiement",
+      "loadError": "Échec du chargement du profil de paiement",
+      "errors": {
+        "methodRequired": "Veuillez sélectionner un mode de paiement",
+        "phoneRequired": "Le numéro de téléphone est requis",
+        "phoneInvalid": "Numéro mobile camerounais invalide (doit commencer par 6)",
+        "nameRequired": "Le nom du titulaire est requis",
+        "nameTooShort": "Le nom est trop court"
+      },
+      "importantInfo": {
+        "title": "Informations importantes",
+        "item1": "Assurez-vous que votre numéro de téléphone est enregistré pour mobile money",
+        "item2": "Le nom du titulaire du compte doit correspondre exactement pour recevoir les paiements",
+        "item3": "Les retraits sont traités automatiquement en quelques minutes"
+      }
     }
   },
   "riderJobs": {
@@ -1403,5 +1502,28 @@
     "OPEN": "Ouvert",
     "ACCEPTED": "Accepté",
     "RESOLVED": "Résolu"
+  },
+  "payment": {
+    "title": "Paiement Sécurisé",
+    "productAmount": "Produit",
+    "deliveryFee": "Livraison",
+    "amountToPay": "Total à payer",
+    "selectOperator": "Sélectionnez votre mode de paiement",
+    "phoneNumber": "Numéro Mobile Money",
+    "phoneHint": "Entrez votre numéro de téléphone Mobile Money",
+    "enterPhoneNumber": "Veuillez entrer votre numéro de téléphone",
+    "invalidPhoneNumber": "Veuillez entrer un numéro de téléphone camerounais valide",
+    "pay": "Payer maintenant",
+    "initiating": "Initialisation...",
+    "paymentInitFailed": "Échec de l'initialisation du paiement. Veuillez réessayer.",
+    "waitingForApproval": "En attente de l'approbation du paiement",
+    "checkYourPhone": "Veuillez approuver la demande de paiement sur votre téléphone",
+    "dialUssd": "Ou composez ce code USSD pour finaliser le paiement:",
+    "doNotClose": "Ne fermez pas cette fenêtre pendant le traitement du paiement",
+    "paymentSuccess": "Paiement Réussi!",
+    "creatingOrder": "Création de votre commande...",
+    "paymentFailed": "Échec du Paiement",
+    "paymentTimeout": "Le paiement a expiré. Veuillez réessayer.",
+    "tryAgain": "Réessayer"
   }
 }

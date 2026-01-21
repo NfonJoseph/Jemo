@@ -36,7 +36,7 @@ export default function DeliveryAgencyLayout({
     { label: t("dashboard"), href: `/${locale}/rider`, icon: Home },
     { label: t("available"), href: `/${locale}/rider/deliveries/available`, icon: Package },
     { label: t("myDeliveries"), href: `/${locale}/rider/deliveries/me`, icon: Clock },
-    { label: t("pricing"), href: `/${locale}/rider/pricing`, icon: DollarSign },
+    { label: t("wallet"), href: `/${locale}/rider/wallet`, icon: DollarSign },
     { label: t("settings"), href: `/${locale}/rider/settings`, icon: Settings },
   ];
 

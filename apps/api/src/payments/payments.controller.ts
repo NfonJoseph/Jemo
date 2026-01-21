@@ -15,9 +15,44 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { MyCoolPayService } from './mycoolpay.service';
 import { VendorFeePaymentService } from './vendor-fee-payment.service';
+import { PaymentIntentService, InitiatePaymentIntentDto } from './payment-intent.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreatePayinDto, PaymentWebhookDto, VendorFeePayinDto } from './dto';
+import { IsString, IsInt, IsOptional, IsIn, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+
+// DTO for initiating payment intent (Model A: backend computes total)
+class InitiatePaymentIntentBodyDto {
+  @IsString()
+  productId!: string;
+
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  quantity!: number;
+
+  @IsString()
+  deliveryCity!: string;
+
+  @IsString()
+  @IsIn(['MTN_MOBILE_MONEY', 'ORANGE_MONEY'])
+  operator!: 'MTN_MOBILE_MONEY' | 'ORANGE_MONEY';
+
+  @IsString()
+  customerPhone!: string;
+
+  @IsString()
+  customerName!: string;
+
+  @IsOptional()
+  @IsString()
+  customerEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  locale?: string;
+}
 
 @Controller('payments')
 export class PaymentsController {
@@ -27,9 +62,46 @@ export class PaymentsController {
   constructor(
     private readonly myCoolPayService: MyCoolPayService,
     private readonly vendorFeePaymentService: VendorFeePaymentService,
+    private readonly paymentIntentService: PaymentIntentService,
     private readonly configService: ConfigService,
   ) {
     this.webhookSecret = this.configService.get<string>('MYCOOLPAY_WEBHOOK_SECRET') || '';
+  }
+
+  // =============================================
+  // PAYMENT INTENT ENDPOINTS (Pre-order payment for ONLINE products)
+  // =============================================
+
+  /**
+   * Initiate a payment intent for a product that requires online payment
+   * This is called BEFORE order creation
+   * POST /api/payments/mycoolpay/initiate
+   */
+  @Post('mycoolpay/initiate')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async initiatePaymentIntent(
+    @Body() dto: InitiatePaymentIntentBodyDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    this.logger.log(`Initiating payment intent for product ${dto.productId} by user ${user.id}`);
+    return this.paymentIntentService.initiatePaymentIntent(dto, user.id);
+  }
+
+  /**
+   * Verify payment intent status
+   * GET /api/payments/mycoolpay/verify?ref=xxx
+   */
+  @Get('mycoolpay/verify')
+  @UseGuards(JwtAuthGuard)
+  async verifyPaymentIntent(
+    @Query('ref') ref: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    if (!ref) {
+      throw new BadRequestException('Transaction reference is required');
+    }
+    return this.paymentIntentService.verifyPaymentIntent(ref, user.id);
   }
 
   // =============================================

@@ -221,6 +221,8 @@ model DeliveryAgency {
 
   deliveries    Delivery[]
   deliveryJobs  DeliveryJob[]
+  wallet        AgencyWallet?
+  payoutProfile AgencyPayoutProfile?
 
   @@map("delivery_agencies")
 }
@@ -527,6 +529,38 @@ model FeePayment {
   @@map("fee_payments")
 }
 
+// Pre-order payment intent (for ONLINE_ONLY products)
+// Created before order, order is created only after payment succeeds
+model PaymentIntent {
+  id                    String        @id @default(cuid())
+  userId                String
+  productId             String
+  vendorId              String        // Vendor user ID for the product
+  quantity              Int           @default(1)  // Quantity of product
+  productSubtotal       Int           // Product price * quantity (after discounts)
+  deliveryFee           Int           @default(0)  // Delivery fee
+  deliveryCity          String?       // Customer's delivery city
+  deliveryMethod        String?       // JEMO_RIDER or VENDOR_SELF
+  totalAmount           Int           // productSubtotal + deliveryFee (what customer pays)
+  currency              String        @default("XAF")
+  operator              String        // MTN_MOBILE_MONEY or ORANGE_MONEY
+  customerPhone         String        // Customer's phone number for payment
+  status                PaymentStatus @default(INITIATED)
+  appTransactionRef     String        @unique  // Our unique idempotent reference
+  providerTransactionId String?       // MyCoolPay transaction ID
+  providerResponse      String?       // JSON string of provider response
+  failureReason         String?       // Error details if failed
+  usedForOrderId        String?       // Order ID if used to create an order
+  expiresAt             DateTime      // When this intent expires (e.g., 30 min)
+  paidAt                DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([appTransactionRef])
+  @@map("payment_intents")
+}
+
 model Delivery {
   id                      String                  @id @default(cuid())
   orderId                 String                  @unique
@@ -753,6 +787,103 @@ model Payout {
 }
 
 // =============================================
+// DELIVERY AGENCY WALLET SYSTEM
+// =============================================
+
+// AgencyWallet: Holds delivery fee earnings for delivery agencies
+model AgencyWallet {
+  id               String   @id @default(cuid())
+  agencyId         String   @unique  // Links to DeliveryAgency.id
+  agency           DeliveryAgency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Balances in integer XAF
+  availableBalance Int      @default(0)  // Funds available for withdrawal
+  pendingBalance   Int      @default(0)  // Funds held pending order delivery
+  
+  // Withdrawal controls
+  withdrawalsLocked    Boolean   @default(false)  // Admin can lock for fraud prevention
+  lockReason           String?                     // Reason for locking
+  lockedAt             DateTime?                   // When locked
+  lockedById           String?                     // Admin who locked
+  lastWithdrawalAt     DateTime?                   // For rate limiting
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  transactions     AgencyWalletTransaction[]
+  payouts          AgencyPayout[]
+
+  @@map("agency_wallets")
+}
+
+// AgencyWalletTransaction: Ledger of all agency wallet balance changes
+model AgencyWalletTransaction {
+  id            String                        @id @default(cuid())
+  walletId      String
+  wallet        AgencyWallet                  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  
+  // Transaction details
+  type          WalletTransactionType         // CREDIT_PENDING, CREDIT_AVAILABLE, DEBIT_WITHDRAWAL, REVERSAL
+  amount        Int                           // Amount in XAF (always positive)
+  currency      String                        @default("XAF")
+  
+  // Reference to what caused this transaction
+  referenceType WalletTransactionReferenceType // ORDER, PAYOUT, ADJUSTMENT
+  referenceId   String                        // ID of the order, payout, or adjustment
+  
+  // Status
+  status        WalletTransactionStatus       @default(PENDING)
+  
+  // Optional note (for adjustments or reversals)
+  note          String?
+  
+  createdAt     DateTime                      @default(now())
+
+  // Prevent duplicate credits for the same order/reference
+  @@unique([referenceType, referenceId, type])
+  @@index([walletId])
+  @@index([referenceId])
+  @@map("agency_wallet_transactions")
+}
+
+// AgencyPayout: Delivery agency withdrawal request to mobile money
+model AgencyPayout {
+  id                String        @id @default(cuid())
+  agencyId          String        // Links to DeliveryAgency.id
+  walletId          String
+  wallet            AgencyWallet  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  
+  // Amount in integer XAF
+  amount            Int
+  
+  // Status tracking
+  status            PayoutStatus  @default(REQUESTED)
+  
+  // Payout method and destination
+  method            PayoutMethod  // CM_MOMO, CM_OM
+  destinationPhone  String        // E.164 format: +237XXXXXXXXX
+  
+  // Our unique idempotent transaction reference
+  appTransactionRef String        @unique
+  
+  // Payment provider response data
+  providerRef       String?       // Provider's transaction ID
+  providerRaw       Json?         // Full provider response as JSON
+  failureReason     String?       // Error details if failed
+  
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  processedAt       DateTime?     // When payout was completed/failed
+
+  @@index([agencyId])
+  @@index([walletId])
+  @@index([status])
+  @@map("agency_payouts")
+}
+
+// =============================================
 // VENDOR PAYOUT PROFILE (Withdrawal destination settings)
 // =============================================
 
@@ -774,4 +905,31 @@ model VendorPayoutProfile {
   updatedAt       DateTime     @updatedAt
 
   @@map("vendor_payout_profiles")
+}
+
+// =============================================
+// AGENCY PAYOUT PROFILE (Withdrawal destination settings for delivery agencies)
+// =============================================
+
+// AgencyPayoutProfile: Stores agency's preferred withdrawal destination
+model AgencyPayoutProfile {
+  id              String       @id @default(cuid())
+  agencyId        String       @unique  // Links to DeliveryAgency.id
+  
+  // Preferred payout method
+  preferredMethod PayoutMethod // CM_MOMO or CM_OM
+  
+  // Destination phone in canonical E.164 format: +237XXXXXXXXX
+  phone           String
+  
+  // Full name of account holder (for verification)
+  fullName        String
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relation
+  agency          DeliveryAgency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@map("agency_payout_profiles")
 }

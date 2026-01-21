@@ -18,6 +18,7 @@ import {
   ArrowRight,
   AlertCircle,
   DollarSign,
+  Wallet,
 } from "lucide-react";
 
 interface DashboardStats {
@@ -175,7 +176,10 @@ export default function DeliveryAgencyDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+        <Link
+          href={`/${locale}/rider/wallet`}
+          className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+        >
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-emerald-50 rounded-lg">
               <DollarSign className="w-5 h-5 text-emerald-600" />
@@ -187,7 +191,7 @@ export default function DeliveryAgencyDashboardPage() {
               <p className="text-xs text-gray-500">{t("totalEarnings")}</p>
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Cities Covered */}
@@ -293,17 +297,23 @@ export default function DeliveryAgencyDashboardPage() {
       )}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <Button asChild variant="outline" className="h-auto py-4">
           <Link href={`/${locale}/rider/deliveries/available`} className="flex flex-col items-center gap-2">
             <Package className="w-6 h-6" />
-            <span>{t("availableJobs")}</span>
+            <span className="text-xs sm:text-sm">{t("availableJobs")}</span>
           </Link>
         </Button>
         <Button asChild variant="outline" className="h-auto py-4">
           <Link href={`/${locale}/rider/deliveries/me`} className="flex flex-col items-center gap-2">
             <Clock className="w-6 h-6" />
-            <span>{t("activeJobs")}</span>
+            <span className="text-xs sm:text-sm">{t("activeJobs")}</span>
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="h-auto py-4 border-jemo-orange text-jemo-orange hover:bg-jemo-orange/5">
+          <Link href={`/${locale}/rider/wallet`} className="flex flex-col items-center gap-2">
+            <Wallet className="w-6 h-6" />
+            <span className="text-xs sm:text-sm">{t("wallet")}</span>
           </Link>
         </Button>
       </div>

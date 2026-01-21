@@ -294,19 +294,10 @@ export default function OrderDetailPage() {
   };
 
   // Check if "Mark as received" button should be shown
-  // VENDOR_SELF: allow when status is CONFIRMED
-  // JEMO_RIDER: allow when status is DELIVERED
+  // Both VENDOR_DELIVERY and JEMO_RIDER: allow when status is DELIVERED
   const canMarkReceived = (): boolean => {
     if (!order) return false;
-    const deliveryMethod = order.deliveryMethod || "VENDOR_DELIVERY";
-    const status = order.status;
-    
-    if (deliveryMethod === "JEMO_RIDER") {
-      return status === "DELIVERED";
-    } else {
-      // VENDOR_SELF / VENDOR_DELIVERY
-      return status === "CONFIRMED";
-    }
+    return order.status === "DELIVERED";
   };
 
   // Handle marking order as received

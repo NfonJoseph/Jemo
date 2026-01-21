@@ -3,7 +3,9 @@ import { OrderStatus, PaymentStatus, DeliveryStatus, KycStatus, ProductStatus, O
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateOrderDto, PaymentMethod } from "./dto/create-order.dto";
 import { VendorWalletService } from "../wallet/vendor-wallet.service";
+import { AgencyWalletService } from "../wallet/agency-wallet.service";
 import { DeliveryQuoteService } from "../delivery/delivery-quote.service";
+import { PaymentIntentService } from "../payments/payment-intent.service";
 import { validateOrderTransition } from "../common/utils/status-transitions";
 
 /**
@@ -26,7 +28,9 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly vendorWalletService: VendorWalletService,
+    private readonly agencyWalletService: AgencyWalletService,
     private readonly deliveryQuoteService: DeliveryQuoteService,
+    private readonly paymentIntentService: PaymentIntentService,
   ) {}
 
   /**
@@ -128,6 +132,49 @@ export class OrdersService {
       this.validatePaymentPolicy(product, dto.paymentMethod, dto.deliveryCity);
     }
 
+    // For ONLINE payment methods, validate PaymentIntent
+    const isOnlinePayment = dto.paymentMethod === PaymentMethod.MTN_MOBILE_MONEY || 
+                            dto.paymentMethod === PaymentMethod.ORANGE_MONEY;
+    
+    // Check if product requires online payment
+    const requiresOnlinePayment = products.some(
+      (p) => p.paymentPolicy === PaymentPolicy.ONLINE_ONLY ||
+             (p.paymentPolicy === PaymentPolicy.MIXED_CITY_RULE && 
+              dto.deliveryCity?.toLowerCase() !== p.city?.toLowerCase())
+    );
+
+    // Track validated payment intent for later
+    let validatedPaymentIntent: { paymentIntentId: string; amount: number } | null = null;
+
+    if (isOnlinePayment && requiresOnlinePayment) {
+      // Require and validate PaymentIntent
+      if (!dto.paymentIntentRef) {
+        throw new BadRequestException(
+          "This product requires online payment. Please complete payment before placing the order."
+        );
+      }
+
+      // Validate the payment intent
+      const validation = await this.paymentIntentService.getValidPaymentIntentForOrder(
+        dto.paymentIntentRef,
+        customerId,
+        products[0].id
+      );
+
+      if (!validation.valid) {
+        throw new BadRequestException(validation.error || "Invalid payment reference");
+      }
+
+      validatedPaymentIntent = {
+        paymentIntentId: validation.paymentIntentId!,
+        amount: validation.amount!,
+      };
+
+      this.logger.log(
+        `PaymentIntent validated: ${dto.paymentIntentRef} for amount ${validation.amount} XAF`
+      );
+    }
+
     // Calculate product total (use discountPrice if available, otherwise regular price)
     let productTotal = 0;
     for (const item of dto.items) {
@@ -206,9 +253,12 @@ export class OrdersService {
       throw new BadRequestException("Orders must be created with PENDING status");
     }
 
-    // Payment status: INITIATED until payment is confirmed
-    // For COD, payment is still INITIATED until vendor confirms the order
-    const paymentStatus = PaymentStatus.INITIATED;
+    // Payment status: 
+    // - SUCCESS if PaymentIntent was validated (already paid)
+    // - INITIATED for COD or pending online payments
+    const paymentStatus = validatedPaymentIntent 
+      ? PaymentStatus.SUCCESS 
+      : PaymentStatus.INITIATED;
 
     // Map payment method to string for Payment record
     const paymentMethodString = dto.paymentMethod;
@@ -271,9 +321,12 @@ export class OrdersService {
           payment: {
             create: {
               amount: totalAmount,
-              status: paymentStatus,  // INITIATED for all orders
+              status: paymentStatus,
               paymentMethod: paymentMethodString,
-              // paidAt is set when payment is confirmed, not at creation
+              // If payment was already confirmed via PaymentIntent, set paidAt
+              paidAt: validatedPaymentIntent ? new Date() : null,
+              // Store PaymentIntent reference if used
+              appTransactionRef: dto.paymentIntentRef || null,
             },
           },
         },
@@ -285,9 +338,69 @@ export class OrdersService {
 
       // IMPORTANT: DeliveryJob is NOT created here. It's created when vendor confirms the order.
       // This ensures rider dashboard only shows jobs for confirmed orders.
+
+      // Mark PaymentIntent as used if one was validated
+      if (validatedPaymentIntent) {
+        await this.paymentIntentService.markPaymentIntentUsed(
+          validatedPaymentIntent.paymentIntentId,
+          order.id
+        );
+        this.logger.log(`PaymentIntent ${validatedPaymentIntent.paymentIntentId} marked as used for order ${order.id}`);
+
+        // Credit wallets with PENDING funds (not withdrawable until delivery confirmed)
+        const productAmount = totalAmount - deliveryFee;
+        const vendorId = products[0].vendorProfile?.userId;
+
+        if (!vendorId) {
+          this.logger.error(`No vendorId found for product ${products[0].id}`);
+          throw new BadRequestException("Could not determine vendor for this order");
+        }
+
+        // Credit vendor wallet with product amount (PENDING)
+        await this.vendorWalletService.creditPending(
+          vendorId,
+          productAmount,
+          'ORDER' as any, // WalletTransactionReferenceType.ORDER
+          order.id,
+          `Sale: ${products[0].name} (Order #${order.id.slice(-8)})`
+        );
+        this.logger.log(
+          `Credited ${productAmount} XAF to vendor ${vendorId} wallet (pending) for order ${order.id}`
+        );
+
+        // Credit delivery fee based on delivery method
+        if (deliveryFee > 0) {
+          if (deliveryMethod === DeliveryType.JEMO_RIDER && deliveryFeeAgencyId) {
+            // Jemo delivery: credit agency wallet with delivery fee
+            await this.agencyWalletService.creditDeliveryFee(
+              deliveryFeeAgencyId,
+              order.id,
+              deliveryFee,
+              `Delivery fee for order #${order.id.slice(-8)}`
+            );
+            this.logger.log(
+              `Credited ${deliveryFee} XAF to agency ${deliveryFeeAgencyId} wallet (pending) for order ${order.id}`
+            );
+          } else if (deliveryMethod === DeliveryType.VENDOR_DELIVERY) {
+            // Vendor self-delivery: credit vendor wallet with delivery fee too
+            // Use a modified referenceId to avoid unique constraint conflict
+            await this.vendorWalletService.creditPending(
+              vendorId,
+              deliveryFee,
+              'ORDER' as any,
+              `${order.id}_delivery_fee`,
+              `Delivery fee: ${products[0].name} (Order #${order.id.slice(-8)})`
+            );
+            this.logger.log(
+              `Credited ${deliveryFee} XAF to vendor ${vendorId} wallet (pending delivery fee) for order ${order.id}`
+            );
+          }
+        }
+      }
+
       this.logger.log(
         `[Order Created] id=${order.id}, status=${order.status}, deliveryMethod=${order.deliveryMethod}, ` +
-        `productCity=${order.productCity}, deliveryCity=${order.deliveryCity} - NO DeliveryJob created (awaiting vendor confirmation)`
+        `productCity=${order.productCity}, deliveryCity=${order.deliveryCity}, paymentStatus=${paymentStatus} - NO DeliveryJob created (awaiting vendor confirmation)`
       );
 
       return {
@@ -351,7 +464,15 @@ export class OrdersService {
 
   /**
    * Customer marks order as received.
-   * This releases funds to the vendor's wallet.
+   * This releases PENDING funds to AVAILABLE for both vendor and agency wallets.
+   * 
+   * For ONLINE payment orders:
+   * - Vendor PENDING funds → AVAILABLE
+   * - Agency PENDING funds → AVAILABLE (if JEMO_RIDER delivery)
+   * - Vendor delivery fee PENDING → AVAILABLE (if VENDOR_DELIVERY)
+   * 
+   * For COD orders:
+   * - Directly credits vendor available balance
    * 
    * Validation rules:
    * - VENDOR_SELF delivery: allow when status is CONFIRMED
@@ -362,7 +483,7 @@ export class OrdersService {
    * - Idempotent: calling twice doesn't double-credit
    */
   async markReceived(orderId: string, customerId: string) {
-    // Fetch order with items and product info
+    // Fetch order with items, product info, and payment
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -377,6 +498,7 @@ export class OrdersService {
             },
           },
         },
+        payment: true,
       },
     });
 
@@ -433,23 +555,81 @@ export class OrdersService {
     const commissionRate = 0; // 0% commission
     const commissionAmount = Math.floor(subtotalAmount * commissionRate);
     
-    // Vendor payout = subtotal - commission
+    // Vendor payout = subtotal - commission (excludes delivery fee)
     const vendorPayoutAmount = subtotalAmount - commissionAmount;
+    const deliveryFee = order.deliveryFee || 0;
 
     this.logger.log(
-      `Order ${orderId} marked as received: subtotal=${subtotalAmount}, commission=${commissionAmount} (${commissionRate * 100}%), vendorPayout=${vendorPayoutAmount}`
+      `Order ${orderId} marked as received: subtotal=${subtotalAmount}, commission=${commissionAmount} (${commissionRate * 100}%), vendorPayout=${vendorPayoutAmount}, deliveryFee=${deliveryFee}`
     );
 
-    // Perform atomic update: order status + wallet credit
     const now = new Date();
+    let walletAlreadyProcessed = false;
 
-    // Credit vendor wallet (idempotent - will return alreadyProcessed if exists)
-    const walletResult = await this.vendorWalletService.creditAvailableForOrder(
-      vendorUserId,
-      vendorPayoutAmount,
-      orderId,
-      `Order #${orderId.slice(-8)} - customer confirmed receipt`,
-    );
+    // Check if this was an online payment order (payment status SUCCESS and paymentMethod is MYCOOLPAY)
+    const isOnlinePayment = order.payment?.status === PaymentStatus.SUCCESS && 
+      order.paymentMethod === OrderPaymentMethod.MYCOOLPAY;
+
+    if (isOnlinePayment) {
+      // For online payments, move funds from PENDING to AVAILABLE
+      this.logger.log(`Online payment order - releasing PENDING funds to AVAILABLE`);
+
+      try {
+        // Release vendor product earnings from PENDING to AVAILABLE
+        await this.vendorWalletService.creditAvailable(
+          vendorUserId,
+          vendorPayoutAmount,
+          'ORDER' as any,
+          orderId,
+          `Order #${orderId.slice(-8)} - customer confirmed receipt`
+        );
+        this.logger.log(`Released ${vendorPayoutAmount} XAF from vendor pending to available`);
+      } catch (error: any) {
+        // If already processed (unique constraint), that's fine - idempotent
+        if (error.code === 'P2002') {
+          this.logger.log(`Vendor product earnings already released for order ${orderId}`);
+          walletAlreadyProcessed = true;
+        } else {
+          throw error;
+        }
+      }
+
+      // Release delivery fee based on delivery method
+      if (deliveryFee > 0) {
+        if (order.deliveryMethod === DeliveryType.JEMO_RIDER && order.deliveryFeeAgencyId) {
+          // Release agency delivery fee from PENDING to AVAILABLE
+          await this.agencyWalletService.releasePendingFunds(orderId);
+          this.logger.log(`Released ${deliveryFee} XAF from agency pending to available`);
+        } else if (order.deliveryMethod === DeliveryType.VENDOR_DELIVERY) {
+          // Release vendor delivery fee from PENDING to AVAILABLE
+          try {
+            await this.vendorWalletService.creditAvailable(
+              vendorUserId,
+              deliveryFee,
+              'ORDER' as any,
+              `${orderId}_delivery_fee`,
+              `Delivery fee for order #${orderId.slice(-8)} - customer confirmed receipt`
+            );
+            this.logger.log(`Released ${deliveryFee} XAF vendor delivery fee from pending to available`);
+          } catch (error: any) {
+            if (error.code === 'P2002') {
+              this.logger.log(`Vendor delivery fee already released for order ${orderId}`);
+            } else {
+              throw error;
+            }
+          }
+        }
+      }
+    } else {
+      // For COD orders, directly credit vendor available balance
+      const walletResult = await this.vendorWalletService.creditAvailableForOrder(
+        vendorUserId,
+        vendorPayoutAmount,
+        orderId,
+        `Order #${orderId.slice(-8)} - customer confirmed receipt (COD)`,
+      );
+      walletAlreadyProcessed = walletResult.alreadyProcessed;
+    }
 
     // Update order with earnings breakdown and status
     const updatedOrder = await this.prisma.order.update({
@@ -461,7 +641,7 @@ export class OrdersService {
         commissionRate,
         commissionAmount,
         vendorPayoutAmount,
-        fundsReleasedAt: walletResult.alreadyProcessed ? order.fundsReleasedAt : now,
+        fundsReleasedAt: walletAlreadyProcessed ? order.fundsReleasedAt : now,
       },
     });
 
@@ -471,8 +651,10 @@ export class OrdersService {
 
     return {
       success: true,
-      message: "Order marked as received. Funds released to vendor.",
-      alreadyProcessed: walletResult.alreadyProcessed,
+      message: isOnlinePayment 
+        ? "Order marked as received. Pending funds released to vendor and agency."
+        : "Order marked as received. Funds credited to vendor.",
+      alreadyProcessed: walletAlreadyProcessed,
       order: {
         id: updatedOrder.id,
         status: updatedOrder.status,

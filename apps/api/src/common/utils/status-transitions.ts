@@ -30,12 +30,13 @@ export const ORDER_TRANSITIONS = {
 
   /**
    * Transitions that customers can perform
+   * Flow: PENDING → CONFIRMED → IN_TRANSIT → DELIVERED → COMPLETED
    */
   customer: {
     [OrderStatus.PENDING]: [OrderStatus.CANCELLED], // Can cancel pending orders
-    [OrderStatus.CONFIRMED]: [OrderStatus.COMPLETED], // Can mark received (vendor self-delivery)
-    [OrderStatus.IN_TRANSIT]: [], // Cannot transition
-    [OrderStatus.DELIVERED]: [OrderStatus.COMPLETED], // Can mark received (Jemo delivery)
+    [OrderStatus.CONFIRMED]: [OrderStatus.CANCELLED], // Can cancel confirmed orders
+    [OrderStatus.IN_TRANSIT]: [], // Cannot transition - wait for delivery
+    [OrderStatus.DELIVERED]: [OrderStatus.COMPLETED], // Can mark received (both delivery methods)
     [OrderStatus.COMPLETED]: [], // Terminal state
     [OrderStatus.CANCELLED]: [], // Terminal state
   } as Record<OrderStatus, OrderStatus[]>,
@@ -118,30 +119,21 @@ export function validateOrderTransition(
     });
   }
 
-  // Special case: Customer marking as received depends on delivery method
+  // Special case: Customer marking as received - requires DELIVERED status for all delivery methods
+  // Updated flow: PENDING → CONFIRMED → IN_TRANSIT → DELIVERED → (customer marks received) → COMPLETED
   if (actor === "customer" && targetStatus === OrderStatus.COMPLETED) {
-    const deliveryMethod = context?.deliveryMethod || DeliveryType.VENDOR_DELIVERY;
-
-    if (deliveryMethod === DeliveryType.JEMO_RIDER) {
-      // For Jemo delivery, customer can only mark received when DELIVERED
-      if (currentStatus !== OrderStatus.DELIVERED) {
-        throw new BadRequestException({
-          code: "INVALID_RECEIVED_TRANSITION",
-          message: "For Jemo Delivery orders, you can only mark as received after the delivery agency confirms delivery.",
-          currentStatus,
-          requiredStatus: OrderStatus.DELIVERED,
-        });
-      }
-    } else {
-      // For vendor self-delivery, customer can mark received when CONFIRMED
-      if (currentStatus !== OrderStatus.CONFIRMED) {
-        throw new BadRequestException({
-          code: "INVALID_RECEIVED_TRANSITION",
-          message: "For vendor delivery orders, you can mark as received once the vendor confirms the order.",
-          currentStatus,
-          requiredStatus: OrderStatus.CONFIRMED,
-        });
-      }
+    if (currentStatus !== OrderStatus.DELIVERED) {
+      const deliveryMethod = context?.deliveryMethod || DeliveryType.VENDOR_DELIVERY;
+      const message = deliveryMethod === DeliveryType.JEMO_RIDER
+        ? "For Jemo Delivery orders, you can only mark as received after the delivery agency confirms delivery."
+        : "For vendor delivery orders, you can only mark as received after the vendor marks the order as delivered.";
+      
+      throw new BadRequestException({
+        code: "INVALID_RECEIVED_TRANSITION",
+        message,
+        currentStatus,
+        requiredStatus: OrderStatus.DELIVERED,
+      });
     }
   }
 }

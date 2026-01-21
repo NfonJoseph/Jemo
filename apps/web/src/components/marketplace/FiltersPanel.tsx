@@ -8,17 +8,22 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { MarketplaceFilters } from "@/lib/query";
 
-const CATEGORY_KEYS = [
-  "electronics",
-  "fashion",
-  "homeGarden",
-  "babyKids",
-  "healthBeauty",
-  "foodGrocery",
-  "sportsOutdoors",
-  "automotive",
-  "booksStationery",
-  "other",
+// Category config: slug (for API) and translationKey (for i18n)
+const CATEGORIES = [
+  { slug: "electronics", translationKey: "electronics" },
+  { slug: "fashion", translationKey: "fashion" },
+  { slug: "home-garden", translationKey: "homeGarden" },
+  { slug: "baby-kids", translationKey: "babyKids" },
+  { slug: "health-beauty", translationKey: "healthBeauty" },
+  { slug: "supermarket", translationKey: "supermarket" },
+  { slug: "sports-outdoors", translationKey: "sportsOutdoors" },
+  { slug: "automotive", translationKey: "automotive" },
+  { slug: "books-stationery", translationKey: "booksStationery" },
+  { slug: "phones-tablets", translationKey: "phonesTablets" },
+  { slug: "computing", translationKey: "computing" },
+  { slug: "appliances", translationKey: "appliances" },
+  { slug: "gaming", translationKey: "gaming" },
+  { slug: "other", translationKey: "other" },
 ] as const;
 
 interface FiltersPanelProps {
@@ -173,19 +178,19 @@ export function FiltersPanel({
       <div className="space-y-3">
         <label className="text-small font-medium text-gray-700">{t("category")}</label>
         <div className="flex flex-wrap gap-2">
-          {CATEGORY_KEYS.map((key) => {
-            const categoryName = tCat(key);
+          {CATEGORIES.map((cat) => {
+            const categoryName = tCat(cat.translationKey);
             return (
               <button
-                key={key}
+                key={cat.slug}
                 onClick={() =>
                   onFilterChange({
-                    category: filters.category === categoryName ? undefined : categoryName,
+                    category: filters.category === cat.slug ? undefined : cat.slug,
                   })
                 }
                 className={cn(
                   "px-3 py-1.5 rounded-full text-small font-medium transition-colors",
-                  filters.category === categoryName
+                  filters.category === cat.slug
                     ? "bg-jemo-orange text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 )}
@@ -253,7 +258,11 @@ export function FiltersPanel({
             )}
             {filters.category && (
               <FilterTag
-                label={filters.category}
+                label={
+                  CATEGORIES.find((c) => c.slug === filters.category)
+                    ? tCat(CATEGORIES.find((c) => c.slug === filters.category)!.translationKey)
+                    : filters.category
+                }
                 onRemove={() => onFilterChange({ category: undefined })}
               />
             )}
