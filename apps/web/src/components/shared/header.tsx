@@ -85,7 +85,7 @@ export function Header() {
             {/* Logo */}
             <Link href={`/${locale}`} className="flex-shrink-0 tap-highlight-none">
               <Image
-                src="/logo-white.png"
+                src="/logo.png"
                 alt="Jemo"
                 width={120}
                 height={40}
@@ -291,7 +291,7 @@ export function Header() {
               {/* Logo */}
               <Link href={`/${locale}`} className="flex-shrink-0 tap-highlight-none">
                 <Image
-                  src="/logo-white.png"
+                  src="/logo.png"
                   alt="Jemo"
                   width={100}
                   height={32}

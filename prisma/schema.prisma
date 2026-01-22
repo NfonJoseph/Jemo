@@ -174,6 +174,9 @@ model User {
   vendorApplications    VendorApplication[]
   favorites             Favorite[]
   reviews               Review[]
+  packageShipments      PackageShipment[]
+  chatConversations     ChatConversation[]  @relation("UserChatConversations")
+  chatMessages          ChatMessage[]       @relation("UserChatMessages")
 
   @@map("users")
 }
@@ -219,10 +222,11 @@ model DeliveryAgency {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  deliveries    Delivery[]
-  deliveryJobs  DeliveryJob[]
-  wallet        AgencyWallet?
-  payoutProfile AgencyPayoutProfile?
+  deliveries       Delivery[]
+  deliveryJobs     DeliveryJob[]
+  wallet           AgencyWallet?
+  payoutProfile    AgencyPayoutProfile?
+  packageShipments PackageShipment[]
 
   @@map("delivery_agencies")
 }
@@ -932,4 +936,138 @@ model AgencyPayoutProfile {
   agency          DeliveryAgency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
 
   @@map("agency_payout_profiles")
+}
+
+// =============================================
+// PACKAGE SHIPMENT (Send a Package feature - standalone delivery)
+// =============================================
+
+enum PackageShipmentStatus {
+  PENDING           // Customer created, waiting for agency to set fee
+  AWAITING_PAYMENT  // Agency set fee, waiting for customer payment
+  ASSIGNED          // Customer paid, agency preparing for pickup
+  IN_TRANSIT        // Package picked up, on the way
+  DELIVERED         // Package delivered to recipient
+  CANCELLED         // Shipment cancelled
+}
+
+enum PackageShipmentEventType {
+  CREATED
+  ASSIGNED
+  PICKED_UP
+  DELIVERED
+  CANCELLED
+}
+
+model PackageShipment {
+  id                  String                 @id @default(cuid())
+  userId              String                 // Customer who created the shipment
+  user                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Status
+  status              PackageShipmentStatus  @default(PENDING)
+  
+  // Pickup details
+  pickupCity          String
+  pickupAddress       String
+  pickupContactName   String
+  pickupPhone         String                 // Normalized E.164 format
+  
+  // Dropoff details
+  dropoffCity         String
+  dropoffAddress      String
+  dropoffContactName  String
+  dropoffPhone        String                 // Normalized E.164 format
+  
+  // Package details
+  packageType         String                 // e.g., "Document", "Small Box", "Large Box", etc.
+  weightKg            Float?                 // Optional weight in kg
+  notes               String?                // Special instructions
+  
+  // Pricing
+  deliveryFee         Int                    // Fee in XAF
+  
+  // Assignment
+  agencyId            String?                // Assigned delivery agency
+  agency              DeliveryAgency?        @relation(fields: [agencyId], references: [id])
+  
+  // Cancellation
+  cancelReason        String?
+  
+  // Timestamps
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  assignedAt          DateTime?
+  pickedUpAt          DateTime?
+  deliveredAt         DateTime?
+  cancelledAt         DateTime?
+  
+  // Events
+  events              PackageShipmentEvent[]
+
+  @@map("package_shipments")
+}
+
+model PackageShipmentEvent {
+  id          String                    @id @default(cuid())
+  shipmentId  String
+  shipment    PackageShipment           @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  
+  type        PackageShipmentEventType
+  note        String?
+  
+  createdAt   DateTime                  @default(now())
+
+  @@map("package_shipment_events")
+}
+
+// =============================================
+// LIVE CHAT / SUPPORT CONVERSATIONS
+// =============================================
+
+enum ChatConversationStatus {
+  OPEN
+  RESOLVED
+  CLOSED
+}
+
+model ChatConversation {
+  id          String                    @id @default(cuid())
+  userId      String                    // Customer who initiated the chat
+  user        User                      @relation("UserChatConversations", fields: [userId], references: [id], onDelete: Cascade)
+  
+  subject     String?                   // Optional subject/title
+  status      ChatConversationStatus    @default(OPEN)
+  
+  // Last activity for sorting
+  lastMessageAt DateTime?
+  
+  // Timestamps
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  resolvedAt  DateTime?
+  
+  // Messages
+  messages    ChatMessage[]
+
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id              String            @id @default(cuid())
+  conversationId  String
+  conversation    ChatConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  senderId        String            // User ID of sender (customer or admin)
+  sender          User              @relation("UserChatMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  
+  content         String            // Message text
+  isFromAdmin     Boolean           @default(false) // True if sent by admin
+  
+  // Read status
+  readAt          DateTime?
+  
+  createdAt       DateTime          @default(now())
+
+  @@map("chat_messages")
 }

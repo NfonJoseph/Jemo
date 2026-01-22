@@ -16,6 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { MyCoolPayService } from './mycoolpay.service';
 import { VendorFeePaymentService } from './vendor-fee-payment.service';
 import { PaymentIntentService, InitiatePaymentIntentDto } from './payment-intent.service';
+import { ShipmentPaymentService } from './shipment-payment.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreatePayinDto, PaymentWebhookDto, VendorFeePayinDto } from './dto';
@@ -54,6 +55,22 @@ class InitiatePaymentIntentBodyDto {
   locale?: string;
 }
 
+// DTO for shipment payment
+class ShipmentPaymentBodyDto {
+  @IsString()
+  shipmentId!: string;
+
+  @IsString()
+  @IsIn(['MTN_MOMO', 'ORANGE_MONEY'])
+  operator!: 'MTN_MOMO' | 'ORANGE_MONEY';
+
+  @IsString()
+  phone!: string;
+
+  @IsString()
+  customerName!: string;
+}
+
 @Controller('payments')
 export class PaymentsController {
   private readonly logger = new Logger(PaymentsController.name);
@@ -63,6 +80,7 @@ export class PaymentsController {
     private readonly myCoolPayService: MyCoolPayService,
     private readonly vendorFeePaymentService: VendorFeePaymentService,
     private readonly paymentIntentService: PaymentIntentService,
+    private readonly shipmentPaymentService: ShipmentPaymentService,
     private readonly configService: ConfigService,
   ) {
     this.webhookSecret = this.configService.get<string>('MYCOOLPAY_WEBHOOK_SECRET') || '';
@@ -211,6 +229,58 @@ export class PaymentsController {
   }
 
   // =============================================
+  // SHIPMENT PAYMENT ENDPOINTS
+  // =============================================
+
+  /**
+   * Initiate shipment delivery fee payment
+   * POST /api/payments/mycoolpay/shipment/payin
+   */
+  @Post('mycoolpay/shipment/payin')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async initiateShipmentPayment(
+    @Body() dto: ShipmentPaymentBodyDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    this.logger.log(`Initiating shipment payment for shipment ${dto.shipmentId}`);
+    return this.shipmentPaymentService.initiatePayment(dto, user.id);
+  }
+
+  /**
+   * Confirm shipment payment (for test mode or after callback)
+   * POST /api/payments/mycoolpay/shipment/confirm
+   */
+  @Post('mycoolpay/shipment/confirm')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async confirmShipmentPayment(
+    @Body() body: { shipmentId: string },
+    @CurrentUser() user: { id: string },
+  ) {
+    this.logger.log(`Confirming shipment payment for shipment ${body.shipmentId}`);
+    return this.shipmentPaymentService.confirmPayment(body.shipmentId, user.id);
+  }
+
+  /**
+   * Check shipment payment status
+   * GET /api/payments/mycoolpay/shipment/status?providerRef=xxx&shipmentId=yyy
+   */
+  @Get('mycoolpay/shipment/status')
+  @UseGuards(JwtAuthGuard)
+  async getShipmentPaymentStatus(
+    @Query('providerRef') providerRef: string,
+    @Query('shipmentId') shipmentId: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    this.logger.log(`Checking shipment payment status for providerRef: ${providerRef}, shipmentId: ${shipmentId}`);
+    if (!providerRef || !shipmentId) {
+      throw new BadRequestException('Provider reference and shipment ID are required');
+    }
+    return this.shipmentPaymentService.checkPaymentStatus(providerRef, shipmentId, user.id);
+  }
+
+  // =============================================
   // WEBHOOKS
   // =============================================
 
@@ -241,6 +311,19 @@ export class PaymentsController {
     if (ref.startsWith('VFEE-')) {
       // Vendor fee payment
       return this.vendorFeePaymentService.handleWebhook({
+        transaction_ref: dto.transaction_ref,
+        transaction_id: dto.transaction_id,
+        status: dto.status,
+        amount: dto.amount,
+        operator: dto.operator,
+        customer_phone_number: dto.customer_phone_number,
+        reason: dto.reason,
+      });
+    }
+
+    if (ref.startsWith('SHIP-')) {
+      // Shipment delivery fee payment
+      return this.shipmentPaymentService.handleWebhook({
         transaction_ref: dto.transaction_ref,
         transaction_id: dto.transaction_id,
         status: dto.status,

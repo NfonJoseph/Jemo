@@ -108,7 +108,7 @@ export default function VendorLayout({
         <div className="flex items-center justify-between h-14 px-4">
           <Link href={`/${locale}/vendor`} className="flex items-center gap-2">
             <Image
-              src="/logo-white.png"
+              src="/logo.png"
               alt="Jemo"
               width={80}
               height={28}

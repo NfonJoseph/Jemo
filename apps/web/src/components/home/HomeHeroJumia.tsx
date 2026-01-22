@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, Headphones, Store, Package, LogIn, UserPlus } from "lucide-react";
+import { User, MessageSquare, Store, Package, LogIn, UserPlus } from "lucide-react";
 import { useTranslations, useLocale } from "@/lib/translations";
 import { useAuth } from "@/lib/auth-context";
 import { getSidebarCategories, type Category } from "@/config/categories";
@@ -125,25 +125,31 @@ function AccountCard() {
 function SupportCard() {
   const t = useTranslations();
 
+  const handleOpenChat = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('openChatWidget'));
+    }
+  };
+
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 shrink-0">
+    <button
+      onClick={handleOpenChat}
+      className="bg-white rounded-xl shadow-sm p-4 shrink-0 w-full text-left hover:shadow-md transition-shadow"
+    >
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-          <Headphones className="w-5 h-5 text-blue-600" />
+          <MessageSquare className="w-5 h-5 text-blue-600" />
         </div>
         <div className="min-w-0">
           <p className="text-xs text-gray-500 uppercase tracking-wide truncate">
             {t("hero.support.title")}
           </p>
-          <a
-            href={`tel:${SUPPORT_PHONE}`}
-            className="font-semibold text-gray-900 hover:text-jemo-orange transition-colors"
-          >
-            {SUPPORT_PHONE_FORMATTED}
-          </a>
+          <span className="font-semibold text-gray-900">
+            {t("hero.support.liveChat")}
+          </span>
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -163,7 +169,7 @@ function QuickActionsCard() {
         <span className="font-medium text-gray-700 truncate">{t("hero.actions.sell")}</span>
       </Link>
       <Link
-        href={`/${locale}/send-parcel`}
+        href={`/${locale}/send-package`}
         className="flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors flex-1"
       >
         <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
@@ -227,13 +233,17 @@ function MobileQuickActions() {
             <span className="text-sm font-medium text-gray-700 truncate">{t("hero.account.login")}</span>
           </Link>
         )}
-        <a
-          href={`tel:${SUPPORT_PHONE}`}
+        <button
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new Event('openChatWidget'));
+            }
+          }}
           className="flex items-center gap-2 p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all"
         >
-          <Headphones className="w-5 h-5 text-blue-600 shrink-0" />
+          <MessageSquare className="w-5 h-5 text-blue-600 shrink-0" />
           <span className="text-sm font-medium text-gray-700 truncate">{t("hero.support.title")}</span>
-        </a>
+        </button>
       </div>
 
       {/* Actions row */}
@@ -246,7 +256,7 @@ function MobileQuickActions() {
           <span className="text-sm font-medium text-gray-700 truncate">{t("hero.actions.sell")}</span>
         </Link>
         <Link
-          href={`/${locale}/send-parcel`}
+          href={`/${locale}/send-package`}
           className="flex items-center gap-2 p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all"
         >
           <Package className="w-5 h-5 text-blue-600 shrink-0" />

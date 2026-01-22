@@ -151,8 +151,8 @@ function SubscriptionColumn() {
           {/* Live Chat */}
           <button
             onClick={() => {
-              // TODO: Open live chat widget
-              console.log("Open live chat");
+              // Dispatch custom event to open the chat widget
+              window.dispatchEvent(new CustomEvent("openChatWidget"));
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-jemo-orange text-white rounded-md hover:bg-jemo-orange/90 transition-colors"
             aria-label="Live Chat"
@@ -456,7 +456,18 @@ export function Footer() {
       <div className="bg-gray-200 border-t border-gray-300">
         <div className="max-w-screen-xl mx-auto px-4 py-4">
           <p className="text-center text-sm text-gray-600">
-            © {currentYear} JEMO. {t("footer.allRightsReserved")}.
+            © {currentYear} JEMO. {t("footer.allRightsReserved")}.{" "}
+            <span className="text-gray-500">
+              {t("footer.developedBy")}{" "}
+              <a
+                href="https://bridgeyou.cm"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-jemo-orange hover:underline font-medium"
+              >
+                BridgeYou
+              </a>
+            </span>
           </p>
         </div>
       </div>

@@ -29,22 +29,22 @@ export const countriesOperate = [
 // Sell on Jemo links
 export const sellOnJemoLinks = [
   { labelKey: "footer.becomeASeller", href: "/account/vendor/apply" },
-  { labelKey: "footer.sellerCenter", href: "/vendor" },
-  { labelKey: "footer.sellerFaq", href: "/help/seller-faq" },
+  { labelKey: "footer.sellerCenter", href: "/sell" },
+  { labelKey: "footer.sellerFaq", href: "/faq#seller-faq" },
 ];
 
 // Shopping Guide links
 export const shoppingGuideLinks = [
-  { labelKey: "footer.howToRegister", href: "/help/how-to-register" },
-  { labelKey: "footer.howToOrder", href: "/help/how-to-order" },
-  { labelKey: "footer.howToPay", href: "/help/how-to-pay" },
-  { labelKey: "footer.deliveryInfo", href: "/help/delivery" },
+  { labelKey: "footer.howToRegister", href: "/shopping-guide#how-to-register" },
+  { labelKey: "footer.howToOrder", href: "/shopping-guide#how-to-order" },
+  { labelKey: "footer.howToPay", href: "/shopping-guide#how-to-pay" },
+  { labelKey: "footer.deliveryInfo", href: "/shopping-guide#delivery-info" },
 ];
 
 // Help Center links
 export const helpCenterLinks = [
-  { labelKey: "footer.faqs", href: "/help/faqs" },
-  { labelKey: "footer.returnsPolicy", href: "/help/returns" },
+  { labelKey: "footer.faqs", href: "/faq" },
+  { labelKey: "footer.returnsPolicy", href: "/returns" },
   { labelKey: "footer.disputesSupport", href: "/help/disputes" },
   { labelKey: "footer.contactUs", href: "/contact" },
 ];
@@ -58,14 +58,14 @@ export const aboutLinks = [
 
 // FAQ tag links (short topics)
 export const faqTags = [
-  { label: "Discount", href: "/help/faqs#discount" },
-  { label: "Service commitment", href: "/help/faqs#service" },
-  { label: "Feedback", href: "/help/faqs#feedback" },
-  { label: "Payments", href: "/help/faqs#payments" },
-  { label: "Wishlist", href: "/help/faqs#wishlist" },
-  { label: "Store", href: "/help/faqs#store" },
-  { label: "Cart", href: "/help/faqs#cart" },
-  { label: "Coupon", href: "/help/faqs#coupon" },
+  { label: "Discount", href: "/faq#payment-methods" },
+  { label: "Service commitment", href: "/faq#customer-support" },
+  { label: "Feedback", href: "/faq#customer-support" },
+  { label: "Payments", href: "/faq#payment-methods" },
+  { label: "Wishlist", href: "/faq#place-order" },
+  { label: "Store", href: "/faq#become-vendor" },
+  { label: "Cart", href: "/faq#place-order" },
+  { label: "Coupon", href: "/faq#payment-methods" },
 ];
 
 // Benefits row items

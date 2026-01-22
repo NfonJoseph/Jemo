@@ -107,7 +107,7 @@ export default function LoginPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link href={`/${locale}`} className="flex justify-center mb-8">
           <Image
-            src="/logo-orange.jpg"
+            src="/logo.png"
             alt="Jemo"
             width={120}
             height={40}

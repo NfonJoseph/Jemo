@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "@/lib/translations";
 import { api, ApiError } from "@/lib/api";
+import { formatPrice } from "@/lib/utils";
 import type { AvailableJob, DeliveryJob } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared";
-import { formatPrice } from "@/lib/utils";
 import {
   Package,
   Clock,
@@ -17,8 +17,8 @@ import {
   MapPin,
   ArrowRight,
   AlertCircle,
-  DollarSign,
   Wallet,
+  Send,
 } from "lucide-react";
 
 interface DashboardStats {
@@ -30,6 +30,14 @@ interface DashboardStats {
   isActive: boolean;
 }
 
+interface AvailableShipmentsResponse {
+  shipments: Array<{
+    id: string;
+    pickupCity: string;
+    dropoffCity: string;
+  }>;
+}
+
 export default function DeliveryAgencyDashboardPage() {
   const locale = useLocale();
   const t = useTranslations("deliveryAgency.dashboard");
@@ -38,6 +46,7 @@ export default function DeliveryAgencyDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [availableJobs, setAvailableJobs] = useState<AvailableJob[]>([]);
   const [activeJob, setActiveJob] = useState<DeliveryJob | null>(null);
+  const [availableShipments, setAvailableShipments] = useState<number>(0);
 
   useEffect(() => {
     loadDashboardData();
@@ -70,6 +79,14 @@ export default function DeliveryAgencyDashboardPage() {
         }
       } catch {
         setActiveJob(null);
+      }
+
+      // Fetch available shipments count
+      try {
+        const shipmentsData = await api.get<AvailableShipmentsResponse>("/rider/shipments/available", true);
+        setAvailableShipments(shipmentsData.shipments?.length || 0);
+      } catch {
+        setAvailableShipments(0);
       }
     } catch (err) {
       if (err instanceof ApiError) {
@@ -177,18 +194,18 @@ export default function DeliveryAgencyDashboardPage() {
         </div>
 
         <Link
-          href={`/${locale}/rider/wallet`}
+          href={`/${locale}/rider/shipments`}
           className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-50 rounded-lg">
-              <DollarSign className="w-5 h-5 text-emerald-600" />
+            <div className="p-2.5 bg-purple-50 rounded-lg">
+              <Send className="w-5 h-5 text-purple-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
-                {formatPrice(stats?.totalEarnings || 0)}
+                {availableShipments}
               </p>
-              <p className="text-xs text-gray-500">{t("totalEarnings")}</p>
+              <p className="text-xs text-gray-500">{t("availableShipments")}</p>
             </div>
           </div>
         </Link>

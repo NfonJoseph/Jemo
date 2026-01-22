@@ -57,8 +57,8 @@ export default async function LocaleLayout({
   const messages = await getMessages(locale);
 
   return (
-    <html lang={locale} className={inter.variable}>
-      <body className="font-sans">
+    <html lang={locale} className={inter.variable} suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <TranslationsProvider locale={locale} messages={messages}>
           <MotionProvider>
             <AuthProvider>

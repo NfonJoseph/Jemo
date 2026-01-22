@@ -36,6 +36,7 @@ export default function DeliveryAgencyLayout({
     { label: t("dashboard"), href: `/${locale}/rider`, icon: Home },
     { label: t("available"), href: `/${locale}/rider/deliveries/available`, icon: Package },
     { label: t("myDeliveries"), href: `/${locale}/rider/deliveries/me`, icon: Clock },
+    { label: t("shipments"), href: `/${locale}/rider/shipments`, icon: Truck },
     { label: t("wallet"), href: `/${locale}/rider/wallet`, icon: DollarSign },
     { label: t("settings"), href: `/${locale}/rider/settings`, icon: Settings },
   ];
@@ -95,7 +96,7 @@ export default function DeliveryAgencyLayout({
         <div className="flex items-center justify-between h-14 px-4">
           <Link href={`/${locale}/rider`} className="flex items-center gap-2">
             <Image
-              src="/logo-white.png"
+              src="/logo.png"
               alt="Jemo"
               width={80}
               height={28}

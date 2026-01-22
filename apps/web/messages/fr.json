@@ -15,6 +15,7 @@
     "filter": "Filtrer",
     "sort": "Trier",
     "clear": "Effacer",
+    "refresh": "Actualiser",
     "clearAll": "Tout effacer",
     "apply": "Appliquer",
     "reset": "Réinitialiser",
@@ -85,6 +86,7 @@
     "contactUs": "Nous contacter",
     "location": "Douala, Cameroun",
     "allRightsReserved": "Tous droits réservés",
+    "developedBy": "Développé par",
     "subscription": "Newsletter",
     "emailPlaceholder": "Entrez votre email",
     "subscribe": "S'abonner",
@@ -175,7 +177,8 @@
     },
     "support": {
       "title": "Support / Litiges",
-      "subtitle": "Nous sommes là pour vous aider"
+      "subtitle": "Nous sommes là pour vous aider",
+      "liveChat": "Chat en direct"
     },
     "actions": {
       "sell": "Vendre sur Jemo",
@@ -514,6 +517,7 @@
   },
   "orders": {
     "title": "Mes commandes",
+    "productOrders": "Commandes de produits",
     "orderNumber": "Commande #{id}",
     "placed": "Passée le",
     "status": "Statut",
@@ -648,6 +652,7 @@
     "dashboard": "Tableau de bord",
     "available": "Livraisons disponibles",
     "myDeliveries": "Mes Livraisons",
+    "shipments": "Envois de Colis",
     "wallet": "Portefeuille",
     "settings": "Paramètres",
     "pricing": "Tarification",
@@ -680,7 +685,8 @@
       "agencyInactive": "Agence Inactive",
       "agencyInactiveDesc": "Votre agence est actuellement inactive. Veuillez contacter l'administrateur pour activer votre compte.",
       "errorLoading": "Erreur de Chargement",
-      "tryAgain": "Réessayer"
+      "tryAgain": "Réessayer",
+      "availableShipments": "Envois Disponibles"
     },
     "available": {
       "title": "Livraisons Disponibles",
@@ -1211,6 +1217,145 @@
     "feature3Title": "Service Fiable",
     "feature3Desc": "Livreurs de confiance et manutention sécurisée"
   },
+  "sendPackage": {
+    "title": "Envoyer un Colis",
+    "subtitle": "Livraison rapide et fiable à travers le Cameroun",
+    "routeSection": "Itinéraire de Livraison",
+    "pickupCity": "Ville de Ramassage",
+    "dropoffCity": "Ville de Livraison",
+    "selectCity": "Sélectionner une ville",
+    "calculatingFee": "Calcul des frais de livraison...",
+    "deliveryAvailable": "Livraison Disponible",
+    "deliveryUnavailable": "Livraison non disponible pour cet itinéraire",
+    "sameCityRate": "Tarif même ville",
+    "otherCityRate": "Tarif inter-ville",
+    "pickupDetails": "Détails du Ramassage",
+    "dropoffDetails": "Détails de la Livraison",
+    "address": "Adresse",
+    "addressPlaceholder": "Entrez l'adresse complète",
+    "contactName": "Nom du Contact",
+    "contactNamePlaceholder": "Nom complet",
+    "recipientPlaceholder": "Nom du destinataire",
+    "phone": "Numéro de Téléphone",
+    "packageDetails": "Détails du Colis",
+    "packageTypeLabel": "Type de Colis",
+    "packageType": {
+      "document": "Document",
+      "small_box": "Petite Boîte",
+      "medium_box": "Boîte Moyenne",
+      "large_box": "Grande Boîte",
+      "envelope": "Enveloppe",
+      "fragile": "Article Fragile",
+      "other": "Autre"
+    },
+    "weight": "Poids (kg)",
+    "optional": "optionnel",
+    "notes": "Instructions Spéciales",
+    "notesPlaceholder": "ex: Manipuler avec soin, appeler avant livraison",
+    "summary": "Résumé de la Commande",
+    "deliveryFee": "Frais de Livraison",
+    "paymentNote": "Le paiement sera collecté à la livraison",
+    "createShipment": "Créer l'Envoi",
+    "creating": "Création...",
+    "loginRequired": "Connexion Requise",
+    "loginRequiredDesc": "Veuillez vous connecter pour envoyer un colis",
+    "formError": "Formulaire Incomplet",
+    "fillAllFields": "Veuillez remplir tous les champs obligatoires",
+    "success": "Envoi Créé !",
+    "successDesc": "Votre envoi de colis a été créé avec succès",
+    "successTitle": "Envoi Créé avec Succès !",
+    "successMessage": "Un agent de livraison sera assigné à votre envoi bientôt. Vous pouvez suivre votre envoi dans Mes Envois.",
+    "viewShipments": "Voir Mes Envois",
+    "error": "Erreur",
+    "whyChooseUs": "Pourquoi Choisir Jemo Delivery ?",
+    "feature1Title": "Livraison Rapide",
+    "feature1Desc": "Options de livraison le jour même et le lendemain",
+    "feature2Title": "Couverture des Villes",
+    "feature2Desc": "Livraison dans les grandes villes du Cameroun",
+    "feature3Title": "Livreurs Fiables",
+    "feature3Desc": "Agents de livraison formés et vérifiés"
+  },
+  "shipment": {
+    "myShipments": "Mes Envois",
+    "myShipmentsDesc": "Suivez et gérez vos livraisons de colis",
+    "newShipment": "Nouvel Envoi",
+    "noShipments": "Aucun Envoi",
+    "noShipmentsDesc": "Vous n'avez pas encore envoyé de colis.",
+    "sendFirst": "Envoyez Votre Premier Colis",
+    "fee": "Frais de Livraison",
+    "created": "Créé",
+    "assignedTo": "Assigné à",
+    "cancel": "Annuler",
+    "viewDetails": "Voir les Détails",
+    "confirmCancel": "Êtes-vous sûr de vouloir annuler cet envoi ?",
+    "cancelled": "Envoi Annulé",
+    "cancelledDesc": "Votre envoi a été annulé",
+    "fetchError": "Échec du chargement des envois",
+    "loginRequired": "Connexion Requise",
+    "loginRequiredDesc": "Veuillez vous connecter pour voir vos envois",
+    "status": {
+      "PENDING": "En Attente",
+      "AWAITING_PAYMENT": "En Attente de Paiement",
+      "ASSIGNED": "Assigné",
+      "IN_TRANSIT": "En Transit",
+      "DELIVERED": "Livré",
+      "CANCELLED": "Annulé"
+    },
+    "payNow": "Payer Maintenant",
+    "paymentRequired": "Paiement requis pour confirmer la livraison",
+    "paymentSuccess": "Paiement confirmé ! Votre colis sera récupéré bientôt.",
+    "notes": "Notes",
+    "customer": "Client",
+    "packageDeliveries": "Livraisons de Colis",
+    "packageDeliveriesDesc": "Acceptez et gérez les envois de colis",
+    "available": "Disponible",
+    "myDeliveries": "Mes Livraisons",
+    "accept": "Accepter l'Envoi",
+    "markPickedUp": "Marquer comme Ramassé",
+    "markDelivered": "Marquer comme Livré",
+    "completed": "Terminé",
+    "accepted": "Envoi Accepté",
+    "acceptedDesc": "L'envoi vous a été assigné",
+    "pickedUp": "Colis Ramassé",
+    "pickedUpDesc": "Le colis est maintenant en transit",
+    "delivered": "Colis Livré",
+    "deliveredDesc": "La livraison est terminée",
+    "noAvailableShipments": "Aucun Envoi Disponible",
+    "noAvailableShipmentsDesc": "Aucun envoi disponible dans votre zone de couverture",
+    "noAssignedShipments": "Aucun Envoi Assigné",
+    "noAssignedShipmentsDesc": "Vous n'avez pas d'envois actifs",
+    "setDeliveryFee": "Définir les frais de livraison (XAF)",
+    "setFee": "Définir",
+    "setFeeHint": "Définissez les frais de livraison pour cet envoi. Minimum 100 XAF.",
+    "feeSetSuccess": "Frais de livraison définis. En attente du paiement du client.",
+    "notSet": "Non défini",
+    "awaitingPayment": "En attente du paiement du client",
+    "payDeliveryFee": "Payer les frais de livraison",
+    "shipmentId": "ID de l'envoi",
+    "selectOperator": "Sélectionnez le mode de paiement",
+    "phoneNumber": "Numéro de téléphone",
+    "customerName": "Votre nom",
+    "enterYourName": "Entrez votre nom complet",
+    "processing": "Traitement...",
+    "payAmount": "Payer {amount} XAF",
+    "paymentInitiated": "Paiement initié. Vérifiez votre téléphone.",
+    "completePaymentOnPhone": "Complétez le paiement sur votre téléphone pour confirmer l'envoi.",
+    "waitingForPayment": "En attente du paiement",
+    "checkYourPhone": "Une demande de paiement a été envoyée à votre téléphone.",
+    "dialUssd": "Composez ce code pour approuver:",
+    "waitingConfirmation": "En attente de confirmation...",
+    "enterPinToComplete": "Entrez votre code PIN sur votre téléphone pour terminer le paiement.",
+    "checkingStatus": "Vérification du statut",
+    "transactionRef": "Réf. Transaction",
+    "doNotClose": "Ne fermez pas cette fenêtre avant la confirmation du paiement.",
+    "retry": "Réessayer",
+    "ivePaid": "J'ai effectué le paiement",
+    "paymentConfirmed": "Paiement confirmé !",
+    "shipmentAssigned": "Votre envoi a été assigné et sera récupéré bientôt.",
+    "paymentFailed": "Échec du paiement",
+    "pleaseTryAgain": "Une erreur s'est produite. Veuillez réessayer.",
+    "availableShipments": "Envois disponibles"
+  },
   "errors": {
     "notFound": "Page non trouvée",
     "notFoundText": "La page que vous recherchez n'existe pas.",
@@ -1470,5 +1615,891 @@
     "paymentFailed": "Échec du Paiement",
     "paymentTimeout": "Le paiement a expiré. Veuillez réessayer.",
     "tryAgain": "Réessayer"
+  },
+  "sell": {
+    "hero": {
+      "title": "Vendez sur Jemo",
+      "subtitle": "Développez votre entreprise en ligne au Cameroun",
+      "description": "Jemo est une marketplace en ligne de confiance qui aide les vendeurs à atteindre plus de clients, vendre plus vite et livrer efficacement dans les villes du Cameroun. Que vous soyez une petite entreprise, un propriétaire de boutique ou un grand distributeur, Jemo vous donne les outils pour vendre en ligne en toute confiance.",
+      "cta": "Commencez à vendre aujourd'hui",
+      "browseProducts": "Parcourir les produits"
+    },
+    "whySell": {
+      "title": "Pourquoi vendre sur Jemo ?",
+      "subtitle": "Tout ce dont vous avez besoin pour développer votre entreprise en ligne"
+    },
+    "benefits": {
+      "reach": {
+        "title": "Atteignez plus de clients",
+        "description": "Montrez vos produits à des milliers d'acheteurs dans différentes villes sans le coût d'ouverture de plusieurs boutiques physiques."
+      },
+      "payment": {
+        "title": "Options de paiement flexibles",
+        "description": "Vous contrôlez comment les clients paient : Paiement en ligne (MTN MoMo / Orange Money), Paiement à la livraison, ou Options hybrides pour différentes villes."
+      },
+      "delivery": {
+        "title": "Gestion facile des livraisons",
+        "description": "Choisissez comment vos produits sont livrés : Livraison personnelle – gérez-la vous-même, ou Livraison Jemo – laissez nos partenaires vérifiés gérer l'expédition."
+      },
+      "secure": {
+        "title": "Transactions sécurisées",
+        "description": "Les paiements sont collectés en toute sécurité, conservés en sécurité jusqu'à la réception de la commande, puis crédités sur votre portefeuille vendeur."
+      }
+    },
+    "howItWorks": {
+      "title": "Comment vendre sur Jemo",
+      "subtitle": "Commencez en 5 étapes simples"
+    },
+    "steps": {
+      "register": {
+        "title": "Créez votre compte vendeur",
+        "description": "Inscrivez-vous en tant que vendeur et configurez votre boutique avec les détails de votre entreprise. C'est rapide et facile de commencer."
+      },
+      "products": {
+        "title": "Ajoutez vos produits",
+        "description": "Téléchargez des images de produits, des descriptions, des prix, des options de livraison et des préférences de paiement."
+      },
+      "orders": {
+        "title": "Recevez des commandes",
+        "description": "Les clients passent des commandes directement sur la plateforme. Vous recevrez des notifications instantanées lorsqu'une nouvelle commande arrive."
+      },
+      "deliver": {
+        "title": "Confirmez et livrez",
+        "description": "Confirmez la commande, choisissez la méthode de livraison (livraison personnelle ou partenaire de livraison Jemo), et suivez l'état de la commande en temps réel."
+      },
+      "paid": {
+        "title": "Recevez votre paiement",
+        "description": "Les paiements en ligne vont sur votre portefeuille vendeur. Retirez vos gains à tout moment via Mobile Money. Les commandes en paiement à la livraison sont réglées directement."
+      }
+    },
+    "wallet": {
+      "title": "Portefeuille & Paiements",
+      "description": "Chaque vendeur a un portefeuille sécurisé où les paiements en ligne sont crédités, les transactions en attente sont suivies, et les commandes terminées débloquent les fonds pour le retrait.",
+      "credited": "Paiements en ligne crédités",
+      "creditedDesc": "Tous les paiements en ligne des clients sont automatiquement ajoutés au solde de votre portefeuille.",
+      "pending": "Transactions en attente suivies",
+      "pendingDesc": "Surveillez tous les paiements en attente et les commandes en attente de confirmation en un seul endroit.",
+      "secure": "Fonds débloqués après livraison",
+      "secureDesc": "Les fonds sont libérés pour le retrait après que le client confirme la réception de sa commande.",
+      "secureRelease": {
+        "title": "Libération sécurisée des fonds",
+        "step1": "Le paiement est effectué avant la livraison",
+        "step2": "Les fonds sont conservés en sécurité pendant le transit",
+        "step3": "Libérés après confirmation du client"
+      }
+    },
+    "orderManagement": {
+      "title": "Gestion des commandes simplifiée",
+      "subtitle": "Visualisez toutes les commandes dans un tableau de bord, confirmez ou annulez les commandes, suivez l'état de la livraison et communiquez avec les clients si nécessaire.",
+      "statusFlow": "Flux des statuts de commande"
+    },
+    "orderStatus": {
+      "pending": "En attente",
+      "confirmed": "Confirmée",
+      "inTransit": "En transit",
+      "completed": "Terminée",
+      "cancelled": "Annulée"
+    },
+    "deliveryOptions": {
+      "title": "Options de livraison expliquées",
+      "self": {
+        "title": "Livraison personnelle",
+        "point1": "Vous gérez la livraison vous-même",
+        "point2": "Prix du produit + frais de livraison vous reviennent",
+        "point3": "Contrôle total sur la logistique"
+      },
+      "jemo": {
+        "title": "Livraison Jemo",
+        "point1": "Agences de livraison locales de confiance",
+        "point2": "Frais de livraison calculés automatiquement",
+        "point3": "Livreurs professionnels gèrent la livraison"
+      }
+    },
+    "whoCanSell": {
+      "title": "Qui peut vendre sur Jemo ?",
+      "subtitle": "Si vous avez un produit à vendre, Jemo vous offre la plateforme pour vous développer."
+    },
+    "sellerTypes": {
+      "retail": "Boutiques",
+      "online": "Vendeurs en ligne",
+      "home": "Entreprises à domicile",
+      "wholesalers": "Grossistes",
+      "distributors": "Distributeurs",
+      "entrepreneurs": "Entrepreneurs"
+    },
+    "support": {
+      "title": "Support & Résolution des litiges",
+      "description": "Nous fournissons une assistance aux vendeurs, une résolution des litiges de commandes, une gestion des problèmes de livraison et des canaux de communication sécurisés.",
+      "tagline": "Vous n'êtes jamais seul sur Jemo.",
+      "vendorSupport": "Support vendeur",
+      "disputeResolution": "Résolution des litiges",
+      "deliveryIssues": "Problèmes de livraison",
+      "secureComms": "Communication sécurisée"
+    },
+    "cta": {
+      "title": "Commencez à vendre aujourd'hui",
+      "description": "Rejoignez des milliers d'entreprises qui se développent déjà sur Jemo. Créez votre compte vendeur aujourd'hui et commencez à vendre en ligne.",
+      "button": "Créer un compte vendeur",
+      "tagline": "Vendez plus intelligemment. Livrez plus vite. Grandissez avec Jemo."
+    }
+  },
+  "about": {
+    "hero": {
+      "title": "À propos de Jemo",
+      "subtitle": "Connecter les acheteurs, les vendeurs et la livraison au Cameroun",
+      "description": "Jemo est une marketplace en ligne conçue pour rendre l'achat, la vente et la livraison de marchandises au Cameroun simples, sécurisés et fiables. Nous connectons les clients avec des vendeurs locaux de confiance et des partenaires de livraison vérifiés, aidant les entreprises à se développer tout en donnant aux clients accès à des produits de tout le pays."
+    },
+    "mission": {
+      "title": "Notre Mission",
+      "description": "Notre mission est de donner du pouvoir aux entreprises locales, de simplifier le commerce et de créer une marketplace numérique fiable où chacun peut acheter, vendre ou envoyer des colis en toute confiance.",
+      "belief": "Nous croyons que la technologie doit supprimer les barrières, pas les créer."
+    },
+    "whatWeDo": {
+      "title": "Ce que nous faisons",
+      "subtitle": "Jemo fournit un écosystème de marketplace complet :",
+      "marketplace": "Marketplace en ligne",
+      "vendorTools": "Outils vendeurs",
+      "delivery": "Services de livraison",
+      "payments": "Paiements sécurisés",
+      "sendPackage": "Envoi de colis",
+      "allInOne": "Tout sur une seule plateforme."
+    },
+    "builtForCameroon": {
+      "title": "Conçu pour le Cameroun",
+      "description": "Jemo est spécialement conçu pour le marché camerounais.",
+      "weUnderstand": "Nous comprenons :",
+      "understand1": "Les habitudes de paiement locales",
+      "understand2": "Les défis de livraison inter-villes",
+      "understand3": "Les préoccupations de confiance des vendeurs",
+      "understand4": "Les attentes des clients en matière de rapidité et fiabilité",
+      "supports": "C'est pourquoi Jemo prend en charge :",
+      "payOnDelivery": "Paiement à la livraison",
+      "mobileMoney": "Mobile Money",
+      "localPricing": "Tarification locale",
+      "cityLogistics": "Logistique basée sur la ville"
+    },
+    "secure": {
+      "title": "Transactions sécurisées et transparentes",
+      "subtitle": "La sécurité et la confiance sont au cœur de Jemo.",
+      "feature1": "Les paiements sont traités en toute sécurité",
+      "feature2": "Les vendeurs sont vérifiés",
+      "feature3": "Les commandes suivent un flux de statut clair",
+      "feature4": "Les clients et vendeurs sont protégés",
+      "fairness": "Notre système garantit l'équité pour les acheteurs et les vendeurs."
+    },
+    "empowering": {
+      "title": "Renforcer les entreprises locales",
+      "description": "Nous croyons que les petites et moyennes entreprises sont l'épine dorsale de l'économie.",
+      "backbone": "Jemo donne aux vendeurs les outils dont ils ont besoin pour réussir en ligne.",
+      "vendorGets": "Jemo offre aux vendeurs :",
+      "benefit1": "Une portée client plus large",
+      "benefit2": "Des outils de vente en ligne simples",
+      "benefit3": "Des options de livraison flexibles",
+      "benefit4": "Une gestion sécurisée des paiements",
+      "benefit5": "Accès à des partenaires de livraison fiables",
+      "noBarriers": "Pas de systèmes complexes. Pas de barrières inutiles."
+    },
+    "delivery": {
+      "title": "Réseau de livraison fiable",
+      "subtitle": "Nous nous associons à des agences de livraison locales professionnelles pour garantir :",
+      "benefit1": "Des livraisons plus rapides",
+      "benefit2": "Des frais transparents",
+      "benefit3": "Suivi en temps réel",
+      "benefit4": "Manipulation sécurisée",
+      "conclusion": "Qu'il s'agisse d'un produit ou d'un colis personnel, Jemo facilite la livraison."
+    },
+    "vision": {
+      "title": "Notre Vision",
+      "description": "Devenir la plateforme de commerce numérique la plus fiable du Cameroun, connectant les personnes, les produits et la logistique de manière transparente à travers les villes et les communautés."
+    },
+    "whyChoose": {
+      "title": "Pourquoi choisir Jemo ?",
+      "reason1": "Conçu pour les réalités locales",
+      "reason2": "Prend en charge le paiement en ligne et à la livraison",
+      "reason3": "Système convivial pour les vendeurs",
+      "reason4": "Partenaires de livraison fiables",
+      "reason5": "Flux de commande sécurisé et transparent",
+      "ecosystem": "Jemo n'est pas qu'une marketplace — c'est un écosystème en croissance."
+    },
+    "cta": {
+      "title": "Rejoignez la communauté Jemo",
+      "description": "Que vous soyez acheteur, vendeur ou partenaire de livraison, Jemo est fait pour vous.",
+      "browse": "Parcourir les produits",
+      "startSelling": "Commencer à vendre",
+      "tagline": "Achetez plus intelligemment. Vendez mieux. Livrez plus vite."
+    }
+  },
+  "terms": {
+    "hero": {
+      "title": "Conditions d'Utilisation",
+      "lastUpdated": "Dernière mise à jour : 22 janvier 2026",
+      "description": "Bienvenue sur Jemo. En accédant ou en utilisant notre site web, application mobile ou services (collectivement, la « Plateforme »), vous acceptez d'être lié par ces Conditions d'Utilisation.",
+      "intro": "Veuillez les lire attentivement.",
+      "warning": "Si vous n'êtes pas d'accord avec une partie de ces conditions, veuillez ne pas utiliser notre Plateforme."
+    },
+    "about": {
+      "title": "1. À propos de Jemo",
+      "desc1": "Jemo est une marketplace en ligne qui connecte des vendeurs indépendants (« Vendeurs ») avec des clients (« Acheteurs »).",
+      "desc2": "Jemo ne possède pas, ne fabrique pas, ne stocke pas et ne vend pas directement les produits listés sur la plateforme. Tous les produits sont listés, tarifés et expédiés par des vendeurs tiers."
+    },
+    "eligibility": {
+      "title": "2. Éligibilité",
+      "subtitle": "Pour utiliser Jemo, vous devez :",
+      "req1": "Avoir au moins 18 ans ou avoir le consentement légal d'un parent/tuteur",
+      "req2": "Fournir des informations exactes et complètes lors de l'inscription",
+      "req3": "Utiliser la plateforme uniquement à des fins légales",
+      "note": "Nous nous réservons le droit de suspendre ou de résilier les comptes qui violent ces conditions."
+    },
+    "accounts": {
+      "title": "3. Comptes Utilisateurs",
+      "registration": {
+        "title": "3.1 Inscription",
+        "desc": "Pour passer des commandes ou vendre des produits, vous devrez peut-être créer un compte. Vous êtes responsable de :",
+        "point1": "Garder vos identifiants de connexion sécurisés",
+        "point2": "Toutes les activités qui se produisent sous votre compte"
+      },
+      "termination": {
+        "title": "3.2 Résiliation de Compte",
+        "desc": "Jemo se réserve le droit de suspendre ou de résilier tout compte pour :",
+        "reason1": "Activité frauduleuse",
+        "reason2": "Abus de la plateforme",
+        "reason3": "Violation de ces Conditions"
+      }
+    },
+    "vendors": {
+      "title": "4. Vendeurs",
+      "subtitle": "Les vendeurs sur Jemo sont des entreprises indépendantes. En vendant sur Jemo, les vendeurs acceptent de :",
+      "obligation1": "Fournir des descriptions de produits, des prix et des images exacts",
+      "obligation2": "Exécuter les commandes rapidement et professionnellement",
+      "obligation3": "Se conformer à toutes les lois et réglementations applicables",
+      "obligation4": "Gérer les retours, remboursements et garanties selon leurs politiques déclarées",
+      "note": "Jemo n'est pas responsable des actions des vendeurs, de la qualité des produits ou des problèmes d'exécution."
+    },
+    "orders": {
+      "title": "5. Commandes et Paiements",
+      "point1": "Lorsque vous passez une commande, vous entrez dans une transaction directe avec le vendeur",
+      "point2": "Les prix et la disponibilité sont fixés par les vendeurs et peuvent changer sans préavis",
+      "point3": "Les paiements sont traités par des partenaires de paiement approuvés",
+      "point4": "Jemo peut facturer des frais de service ou de plateforme, le cas échéant",
+      "note": "Les commandes peuvent être annulées si le paiement échoue, si les produits ne sont pas disponibles ou si une activité frauduleuse est suspectée."
+    },
+    "shipping": {
+      "title": "6. Expédition et Livraison",
+      "point1": "Les délais de livraison sont fournis par les vendeurs et peuvent varier",
+      "point2": "Jemo ne garantit pas les délais de livraison",
+      "point3": "Tout retard causé par les vendeurs, les partenaires logistiques ou des facteurs externes échappe au contrôle direct de Jemo"
+    },
+    "returns": {
+      "title": "7. Retours, Remboursements et Service Après-Vente",
+      "desc1": "Les politiques de retour et de remboursement sont fixées par les vendeurs individuels.",
+      "desc2": "Jemo peut aider à la résolution des litiges mais ne garantit pas les remboursements, car les produits n'appartiennent pas à Jemo.",
+      "link": "Pour plus de détails, veuillez consulter notre Politique de Retours et Service Après-Vente"
+    },
+    "ip": {
+      "title": "8. Propriété Intellectuelle",
+      "desc1": "Tout le contenu sur Jemo (logos, marques, design, texte, logiciel) est la propriété de Jemo ou de ses concédants de licence et ne peut être copié, modifié ou réutilisé sans autorisation.",
+      "desc2": "Le contenu des vendeurs reste la propriété des vendeurs respectifs."
+    },
+    "prohibited": {
+      "title": "9. Activités Interdites",
+      "subtitle": "Vous acceptez de ne pas :",
+      "activity1": "Utiliser la plateforme à des fins illégales ou frauduleuses",
+      "activity2": "Télécharger du contenu faux, trompeur ou offensant",
+      "activity3": "Interférer avec la sécurité ou la fonctionnalité de la plateforme",
+      "activity4": "Contourner les frais de plateforme ou les systèmes de paiement",
+      "warning": "Les violations peuvent entraîner la suspension du compte ou des poursuites judiciaires."
+    },
+    "liability": {
+      "title": "10. Limitation de Responsabilité",
+      "subtitle": "Dans la mesure maximale permise par la loi :",
+      "point1": "Jemo n'est pas responsable des défauts de produits, pertes, dommages ou litiges entre acheteurs et vendeurs",
+      "point2": "Jemo n'est pas responsable des dommages indirects, accessoires ou consécutifs",
+      "note": "L'utilisation de la plateforme est à vos propres risques."
+    },
+    "indemnity": {
+      "title": "11. Indemnisation",
+      "subtitle": "Vous acceptez d'indemniser et de dégager de toute responsabilité Jemo, ses propriétaires, employés et partenaires de toute réclamation, dommage ou responsabilité découlant de :",
+      "point1": "Votre utilisation de la plateforme",
+      "point2": "Violation de ces Conditions",
+      "point3": "Litiges avec des vendeurs ou des clients"
+    },
+    "changes": {
+      "title": "12. Modifications des Conditions",
+      "desc1": "Jemo se réserve le droit de mettre à jour ou de modifier ces Conditions à tout moment.",
+      "desc2": "Les modifications seront effectives une fois publiées sur la plateforme. L'utilisation continue de Jemo constitue l'acceptation des Conditions mises à jour."
+    },
+    "law": {
+      "title": "13. Droit Applicable",
+      "desc": "Ces Conditions sont régies par les lois applicables au Cameroun, sauf disposition contraire de la loi."
+    },
+    "contact": {
+      "title": "14. Informations de Contact",
+      "subtitle": "Pour toute question ou préoccupation concernant ces Conditions, veuillez nous contacter :",
+      "platform": "Jemo"
+    }
+  },
+  "privacy": {
+    "hero": {
+      "title": "Politique de Confidentialité",
+      "lastUpdated": "Dernière mise à jour : 22 janvier 2026",
+      "description": "Bienvenue sur Jemo. Votre vie privée est importante pour nous, et nous nous engageons à protéger les informations personnelles que vous partagez avec nous lors de l'utilisation de notre plateforme.",
+      "intro": "Cette politique de confidentialité explique comment nous collectons, utilisons, divulguons et protégeons vos informations lorsque vous visitez ou utilisez la marketplace Jemo."
+    },
+    "about": {
+      "title": "1. À propos de Jemo",
+      "desc1": "Jemo est une marketplace en ligne qui connecte les acheteurs avec des vendeurs indépendants proposant divers produits ménagers et de consommation.",
+      "desc2": "Jemo ne possède pas, ne fabrique pas et ne stocke pas les produits listés sur la plateforme. Chaque vendeur est responsable de ses produits, de leur exécution et de ses obligations après-vente."
+    },
+    "collect": {
+      "title": "2. Informations que nous collectons",
+      "subtitle": "Nous pouvons collecter les types d'informations suivants :",
+      "personal": {
+        "title": "a. Informations personnelles",
+        "item1": "Nom complet",
+        "item2": "Numéro de téléphone",
+        "item3": "Adresse e-mail",
+        "item4": "Adresse de livraison",
+        "item5": "Détails liés au paiement (traités de manière sécurisée via des fournisseurs tiers)"
+      },
+      "account": {
+        "title": "b. Informations de compte",
+        "item1": "Nom d'utilisateur et mot de passe",
+        "item2": "Historique des commandes",
+        "item3": "Informations de profil vendeur ou acheteur"
+      },
+      "auto": {
+        "title": "c. Informations collectées automatiquement",
+        "item1": "Adresse IP",
+        "item2": "Type de navigateur",
+        "item3": "Informations sur l'appareil",
+        "item4": "Pages visitées et données d'interaction",
+        "note": "Ces informations nous aident à améliorer nos services et l'expérience utilisateur."
+      }
+    },
+    "usage": {
+      "title": "3. Comment nous utilisons vos informations",
+      "subtitle": "Nous utilisons vos informations pour :",
+      "reason1": "Créer et gérer les comptes utilisateurs",
+      "reason2": "Traiter les commandes et les paiements",
+      "reason3": "Faciliter la communication entre acheteurs et vendeurs",
+      "reason4": "Fournir un support client",
+      "reason5": "Envoyer des mises à jour de commandes, notifications et messages de service",
+      "reason6": "Améliorer la fonctionnalité et la sécurité de la plateforme",
+      "reason7": "Se conformer aux obligations légales"
+    },
+    "sharing": {
+      "title": "4. Partage des informations",
+      "noSell": "Nous ne vendons ni ne louons vos informations personnelles.",
+      "subtitle": "Vos informations peuvent être partagées avec :",
+      "party1": {
+        "title": "Vendeurs",
+        "desc": "Uniquement les détails nécessaires pour exécuter votre commande (tels que nom, numéro de téléphone et adresse de livraison)"
+      },
+      "party2": {
+        "title": "Fournisseurs de services de paiement",
+        "desc": "Pour traiter les transactions de manière sécurisée"
+      },
+      "party3": {
+        "title": "Partenaires logistiques",
+        "desc": "Pour les besoins de livraison"
+      },
+      "party4": {
+        "title": "Autorités légales",
+        "desc": "Lorsque requis par la loi"
+      },
+      "note": "Tous les tiers sont tenus de traiter vos données de manière responsable."
+    },
+    "vendor": {
+      "title": "5. Responsabilité des vendeurs",
+      "subtitle": "En tant que marketplace :",
+      "point1": "Les vendeurs ne reçoivent que les informations nécessaires pour compléter une commande",
+      "point2": "Les vendeurs sont responsables de la protection des données clients qu'ils reçoivent",
+      "point3": "Jemo n'est pas responsable de la façon dont les vendeurs stockent ou utilisent les données clients en dehors de la plateforme",
+      "note": "Nous encourageons les utilisateurs à effectuer leurs transactions uniquement via Jemo pour assurer la protection des données."
+    },
+    "cookies": {
+      "title": "6. Cookies et technologies de suivi",
+      "subtitle": "Jemo utilise des cookies et des technologies similaires pour :",
+      "use1": "Mémoriser les préférences utilisateurs",
+      "use2": "Analyser le trafic du site web",
+      "use3": "Améliorer les performances du site",
+      "note": "Vous pouvez choisir de désactiver les cookies dans votre navigateur, mais certaines fonctionnalités de la plateforme peuvent ne pas fonctionner correctement."
+    },
+    "security": {
+      "title": "7. Sécurité des données",
+      "subtitle": "Nous mettons en œuvre des mesures techniques et organisationnelles raisonnables pour protéger vos informations personnelles, notamment :",
+      "measure1": "Serveurs sécurisés",
+      "measure2": "Connexions chiffrées",
+      "measure3": "Accès restreint aux données sensibles",
+      "note": "Cependant, aucun système n'est totalement sécurisé et nous ne pouvons garantir une sécurité absolue."
+    },
+    "rights": {
+      "title": "8. Vos droits",
+      "subtitle": "Vous avez le droit de :",
+      "right1": "Accéder à vos données personnelles",
+      "right2": "Mettre à jour ou corriger vos informations",
+      "right3": "Demander la suppression de votre compte",
+      "right4": "Vous désinscrire des communications marketing",
+      "note": "Pour exercer l'un de ces droits, veuillez nous contacter en utilisant les coordonnées ci-dessous."
+    },
+    "thirdParty": {
+      "title": "9. Liens vers des tiers",
+      "desc1": "Jemo peut contenir des liens vers des sites web ou services tiers.",
+      "desc2": "Nous ne sommes pas responsables des pratiques de confidentialité de ces sites externes."
+    },
+    "changes": {
+      "title": "10. Modifications de cette politique de confidentialité",
+      "desc1": "Nous pouvons mettre à jour cette politique de confidentialité de temps à autre.",
+      "desc2": "Toute modification sera publiée sur cette page avec une date de révision mise à jour.",
+      "note": "Nous encourageons les utilisateurs à consulter régulièrement cette politique."
+    },
+    "contact": {
+      "title": "11. Nous contacter",
+      "subtitle": "Si vous avez des questions ou des préoccupations concernant cette politique de confidentialité, veuillez nous contacter :",
+      "platform": "Marketplace Jemo"
+    }
+  },
+  "returns": {
+    "hero": {
+      "title": "Politique de retours et service après-vente",
+      "subtitle": "Marketplace Jemo",
+      "description": "Chez Jemo, nous connectons les acheteurs avec des vendeurs de confiance à travers le Cameroun. Parce que nous sommes une marketplace, les produits listés sur Jemo sont vendus et expédiés par des vendeurs indépendants, et les conditions de retour peuvent varier selon le vendeur. Cependant, nous nous engageons à protéger les acheteurs et à assurer un support après-vente équitable."
+    },
+    "disclaimer": {
+      "title": "1. Clause de responsabilité de la marketplace",
+      "point1": "Jemo ne possède pas, ne fabrique pas et ne stocke pas les produits vendus sur la plateforme.",
+      "point2": "Chaque vendeur est responsable de la qualité, de l'emballage, de la garantie et des conditions de retour de ses produits.",
+      "point3": "Jemo agit en tant que facilitateur et médiateur pour aider à résoudre les litiges si nécessaire."
+    },
+    "eligible": {
+      "title": "2. Raisons éligibles pour les retours",
+      "subtitle": "Vous pouvez demander un retour ou un remboursement dans les conditions suivantes :",
+      "reason1": "Vous avez reçu un mauvais article",
+      "reason2": "Le produit est endommagé ou défectueux à la livraison",
+      "reason3": "L'article ne correspond pas à la description sur la page produit",
+      "reason4": "Le produit manque de pièces ou d'accessoires",
+      "warning": "⚠️ Le problème doit être signalé dans les 48 heures suivant la livraison."
+    },
+    "nonReturnable": {
+      "title": "3. Articles non retournables",
+      "subtitle": "Les articles suivants peuvent ne pas être éligibles au retour, sauf s'ils sont défectueux :",
+      "item1": "Produits périssables",
+      "item2": "Produits de soins personnels ou d'hygiène",
+      "item3": "Articles personnalisés ou faits sur commande",
+      "item4": "Produits ou services numériques",
+      "item5": "Articles clairement marqués \"Non retournables\" sur la page produit"
+    },
+    "howTo": {
+      "title": "4. Comment demander un retour",
+      "subtitle": "Pour demander un retour ou signaler un problème :",
+      "step1": "Connectez-vous à votre compte Jemo",
+      "step2": "Allez dans Mes commandes",
+      "step3": "Sélectionnez la commande concernée",
+      "step4": "Cliquez sur Demander un retour / Signaler un problème",
+      "step5": "Téléchargez des photos ou vidéos claires montrant le problème",
+      "note": "Une fois soumise, le vendeur et l'équipe support de Jemo examineront votre demande."
+    },
+    "approval": {
+      "title": "5. Approbation et processus de retour",
+      "point1": "Si approuvé, le vendeur fournira les instructions de retour",
+      "point2": "Les articles doivent être retournés dans leur état d'origine, avec emballage et accessoires",
+      "point3": "Les frais d'expédition de retour peuvent être couverts par le vendeur si la faute lui incombe",
+      "warning": "Le non-respect des instructions de retour peut entraîner un rejet."
+    },
+    "refund": {
+      "title": "6. Politique de remboursement",
+      "point1": "Les remboursements sont émis après que le vendeur a reçu et inspecté l'article retourné",
+      "point2": "Les remboursements sont traités via le mode de paiement d'origine ou le portefeuille Jemo",
+      "point3": "Délai de traitement du remboursement : 5 à 10 jours ouvrables"
+    },
+    "afterSales": {
+      "title": "7. Support après-vente et garantie",
+      "point1": "Les garanties produits (le cas échéant) sont fournies par les vendeurs ou fabricants",
+      "point2": "Jemo peut vous aider à contacter le vendeur pour les réclamations de garantie",
+      "point3": "Les services après-vente tels que les réparations ou remplacements dépendent de la politique du vendeur"
+    },
+    "dispute": {
+      "title": "8. Résolution des litiges",
+      "subtitle": "Si un vendeur ne répond pas ou ne résout pas un problème :",
+      "point1": "Jemo interviendra en tant que médiateur neutre",
+      "point2": "Notre décision sera basée sur les preuves fournies par les deux parties",
+      "point3": "Jemo se réserve le droit de suspendre les vendeurs qui violent les politiques de la plateforme"
+    },
+    "sellerPolicy": {
+      "title": "9. Variations des politiques des vendeurs",
+      "subtitle": "Certains vendeurs peuvent offrir :",
+      "variation1": "Périodes de retour prolongées",
+      "variation2": "Retours gratuits",
+      "variation3": "Remplacements directs",
+      "note": "Consultez toujours la politique de retour du vendeur sur la page produit avant d'acheter."
+    },
+    "contact": {
+      "title": "10. Contacter le support Jemo",
+      "subtitle": "Pour obtenir de l'aide concernant les retours ou les problèmes après-vente :",
+      "liveChat": "Chat en direct disponible"
+    }
+  },
+  "faq": {
+    "hero": {
+      "title": "Questions Fréquemment Posées",
+      "subtitle": "Trouvez des réponses aux questions courantes sur les achats, l'expédition, les paiements et plus encore."
+    },
+    "quickLinks": {
+      "seller": "Devenir Vendeur",
+      "payments": "Paiements",
+      "tracking": "Suivi",
+      "delivery": "Livraison"
+    },
+    "sections": {
+      "general": "Questions Générales",
+      "seller": "FAQ Vendeurs"
+    },
+    "items": {
+      "services": {
+        "question": "Quels services proposez-vous ?",
+        "answer": "Nous fournissons des services d'expédition et de logistique fiables, y compris l'expédition internationale, la livraison locale, les achats auprès de vendeurs, la consolidation de cargaisons et la livraison à domicile. Les clients peuvent acheter auprès de vendeurs approuvés ou expédier leurs propres marchandises via notre plateforme."
+      },
+      "createAccount": {
+        "question": "Comment créer un compte ?",
+        "step1": "Cliquez sur le bouton S'inscrire sur notre site web",
+        "step2": "Remplissez vos informations personnelles (nom, email, numéro de téléphone et mot de passe)",
+        "step3": "Vérifiez votre email ou numéro de téléphone",
+        "step4": "Connectez-vous et commencez à acheter ou expédier immédiatement"
+      },
+      "needAccount": {
+        "question": "Ai-je besoin d'un compte pour passer une commande ?",
+        "benefit1": "Suivre vos commandes",
+        "benefit2": "Recevoir des mises à jour de livraison",
+        "benefit3": "Gérer les paiements",
+        "benefit4": "Communiquer facilement avec les vendeurs et le support"
+      },
+      "placeOrder": {
+        "question": "Comment passer une commande ?",
+        "step1": "Connectez-vous à votre compte",
+        "step2": "Parcourez les produits ou vendeurs",
+        "step3": "Ajoutez des articles à votre panier",
+        "step4": "Confirmez les détails d'expédition",
+        "step5": "Procédez au paiement"
+      },
+      "paymentMethods": {
+        "question": "Quels modes de paiement acceptez-vous ?",
+        "method1": "MTN Mobile Money",
+        "method2": "Orange Money",
+        "method3": "Paiement à la livraison (pour les produits éligibles)",
+        "method4": "Virements bancaires (si disponible)"
+      },
+      "paymentType": {
+        "question": "Le paiement se fait-il en ligne ou en personne ?",
+        "answer": "La plupart des commandes sont payées en ligne pour un traitement plus rapide, mais dans certains cas, le paiement en personne ou à la livraison peut être disponible selon le service et l'emplacement."
+      },
+      "deliveryTime": {
+        "question": "Combien de temps prend la livraison ?",
+        "answer": "Le délai de livraison dépend de la destination d'expédition, du type de service sélectionné (standard ou express) et du dédouanement pour les envois internationaux. Les délais de livraison estimés sont affichés lors du paiement."
+      },
+      "trackShipment": {
+        "question": "Comment puis-je suivre mon envoi ?",
+        "feature1": "Un numéro de suivi vous sera envoyé",
+        "feature2": "Mises à jour en temps réel via votre tableau de bord",
+        "feature3": "Notifications par email ou SMS"
+      },
+      "international": {
+        "question": "Proposez-vous l'expédition internationale ?",
+        "answer": "Oui. Nous expédions vers et depuis les États-Unis et d'autres pays pris en charge. L'expédition internationale comprend la consolidation de cargaisons et la gestion des douanes le cas échéant."
+      },
+      "becomeVendor": {
+        "question": "Puis-je devenir vendeur sur votre plateforme ?",
+        "answer": "Oui ! Les vendeurs sont les bienvenus pour vendre des produits via notre plateforme. Visitez la page d'inscription vendeur pour postuler, soumettre les détails de votre entreprise et être approuvé."
+      },
+      "prohibitedItems": {
+        "question": "Quels articles sont interdits à l'expédition ?",
+        "item1": "Articles illégaux",
+        "item2": "Marchandises dangereuses",
+        "item3": "Explosifs ou armes",
+        "item4": "Substances restreintes ou interdites"
+      },
+      "delayedPackage": {
+        "question": "Que se passe-t-il si mon colis est retardé ?",
+        "answer": "Si des retards surviennent en raison de la météo, des douanes ou de circonstances imprévues, nous vous informerons immédiatement et fournirons des mises à jour jusqu'à ce que la livraison soit terminée."
+      },
+      "customerSupport": {
+        "question": "Offrez-vous un support client ?",
+        "topic1": "Commandes",
+        "topic2": "Paiements",
+        "topic3": "Suivi",
+        "topic4": "Problèmes avec les vendeurs"
+      },
+      "security": {
+        "question": "Mes informations sont-elles sécurisées ?",
+        "answer": "Absolument. Nous utilisons des systèmes sécurisés et le chiffrement pour protéger vos informations personnelles et de paiement à tout moment."
+      },
+      "moreHelp": {
+        "question": "Qui contacter pour plus d'aide ?",
+        "answer": "Si vous avez besoin d'assistance, visitez notre page Contact ou appelez notre ligne de support. Nous sommes toujours heureux de vous aider."
+      }
+    },
+    "seller": {
+      "benefitsTitle": "Pourquoi vendre sur Jemo ?",
+      "benefit1": "Atteignez des milliers de clients à travers le Cameroun",
+      "benefit2": "Tableau de bord vendeur simple et facile à utiliser",
+      "benefit3": "Paiements sécurisés et options de livraison fiables",
+      "benefit4": "Support complet de notre équipe de succès vendeurs",
+      "applyNow": "Postuler pour devenir vendeur"
+    },
+    "help": {
+      "title": "Encore des questions ?",
+      "description": "Notre équipe de support est là pour vous aider avec toutes vos questions ou préoccupations.",
+      "contactUs": "Nous contacter"
+    }
+  },
+  "shoppingGuide": {
+    "hero": {
+      "title": "Guide d'achat",
+      "subtitle": "Tout ce que vous devez savoir pour acheter sur Jemo",
+      "description": "Bienvenue sur Jemo ! Ce guide vous accompagnera à travers les étapes simples pour vous inscrire, passer une commande, effectuer des paiements et recevoir vos articles en toute sécurité."
+    },
+    "nav": {
+      "register": "Comment s'inscrire",
+      "order": "Comment commander",
+      "pay": "Comment payer",
+      "delivery": "Infos livraison"
+    },
+    "register": {
+      "title": "Comment s'inscrire",
+      "subtitle": "Créer un compte sur Jemo est rapide et gratuit.",
+      "step1": "Cliquez sur S'inscrire en haut du site web",
+      "step2": "Entrez votre nom complet, numéro de téléphone (numéros camerounais uniquement) et mot de passe",
+      "step3": "Complétez l'étape de vérification pour confirmer que vous êtes humain",
+      "step4": "Cliquez sur Créer un compte",
+      "note": "Une fois inscrit, vous pouvez vous connecter à tout moment avec votre numéro de téléphone et mot de passe."
+    },
+    "order": {
+      "title": "Comment passer une commande",
+      "subtitle": "Acheter sur Jemo est simple et sécurisé.",
+      "step1": "Parcourez les produits ou recherchez ce dont vous avez besoin",
+      "step2": "Cliquez sur un produit pour voir tous les détails",
+      "step3": "Choisissez votre quantité, lieu de livraison et option de livraison",
+      "step4": "Cliquez sur Passer la commande",
+      "step5": "Vérifiez les détails de votre commande avant de confirmer",
+      "note": "Votre commande sera envoyée au vendeur pour confirmation."
+    },
+    "payment": {
+      "title": "Comment payer",
+      "subtitle": "Jemo prend en charge des options de paiement flexibles selon le produit et le vendeur.",
+      "methodsTitle": "Méthodes de paiement disponibles",
+      "pod": "Paiement à la livraison",
+      "howItWorks": "Comment fonctionne le paiement en ligne",
+      "step1": "Sélectionnez Paiement en ligne à la caisse",
+      "step2": "Choisissez MTN MoMo ou Orange Money",
+      "step3": "Complétez le paiement sur votre téléphone",
+      "step4": "Vous recevrez une confirmation de paiement instantanément",
+      "secureNote": "Pour les paiements en ligne, votre argent est conservé en sécurité jusqu'à ce que votre commande soit terminée."
+    },
+    "delivery": {
+      "title": "Informations sur la livraison",
+      "subtitle": "Jemo offre plusieurs options de livraison adaptées à vos besoins.",
+      "methods": {
+        "vendor": {
+          "title": "Livraison vendeur",
+          "desc": "Livré directement par le vendeur"
+        },
+        "jemo": {
+          "title": "Livraison Jemo",
+          "desc": "Livré par nos agences de transport partenaires"
+        },
+        "pickup": {
+          "title": "Retrait disponible",
+          "desc": "Récupérez votre commande vous-même (si activé)"
+        }
+      },
+      "feesTitle": "Frais de livraison",
+      "feesDesc": "Les frais de livraison sont calculés automatiquement en fonction de :",
+      "feesFactor1": "Votre emplacement",
+      "feesFactor2": "Emplacement du vendeur",
+      "feesFactor3": "Méthode de livraison choisie",
+      "feesNote": "Les frais sont affichés clairement avant de passer votre commande.",
+      "statusTitle": "Flux des statuts de commande",
+      "status": {
+        "pending": "En attente",
+        "pendingDesc": "Commande passée, en attente d'action du vendeur",
+        "confirmed": "Confirmée",
+        "confirmedDesc": "Le vendeur a accepté la commande",
+        "inTransit": "En transit",
+        "inTransitDesc": "Commande récupérée pour livraison",
+        "completed": "Terminée",
+        "completedDesc": "Commande livrée et marquée comme reçue",
+        "cancelled": "Annulée",
+        "cancelledDesc": "Commande annulée (avec raison)"
+      }
+    },
+    "reviews": {
+      "title": "Finalisation et avis",
+      "step1": "Une fois votre commande reçue, allez dans Mes commandes",
+      "step2": "Cliquez sur Marquer comme reçue",
+      "step3": "Vous pourrez ensuite laisser un avis sur le vendeur et le produit",
+      "note": "Les avis aident les autres acheteurs à acheter en toute confiance."
+    },
+    "help": {
+      "title": "Besoin d'aide ?",
+      "description": "Si vous avez besoin d'assistance à n'importe quelle étape, notre équipe est là pour vous.",
+      "tagline": "Notre équipe est toujours prête à vous aider à acheter facilement et en toute confiance."
+    }
+  },
+  "contact": {
+    "hero": {
+      "title": "Contactez-nous",
+      "subtitle": "Nous sommes là pour vous aider",
+      "description": "Vous avez une question, besoin d'aide ou souhaitez devenir partenaire ? L'équipe Jemo est toujours prête à vous aider."
+    },
+    "getInTouch": {
+      "title": "Nous contacter",
+      "phone": {
+        "title": "Téléphone / WhatsApp"
+      },
+      "email": {
+        "title": "Email"
+      },
+      "area": {
+        "title": "Zone de service",
+        "value": "Disponible dans tout le Cameroun"
+      }
+    },
+    "support": {
+      "title": "Support Client",
+      "description": "Notre équipe support peut vous aider avec :",
+      "topics": {
+        "orders": "Commandes et livraisons",
+        "payments": "Paiements (MTN MoMo / Orange Money)",
+        "vendor": "Inscription et vérification vendeur",
+        "account": "Problèmes de compte",
+        "packages": "Envoi de colis",
+        "general": "Questions générales"
+      }
+    },
+    "hours": {
+      "title": "Heures de support",
+      "weekdays": "Lundi – Samedi",
+      "weekends": "Dimanche & Jours fériés",
+      "limited": "Support limité"
+    },
+    "partners": {
+      "title": "Vendeurs & Partenaires",
+      "subtitle": "Intéressé à devenir vendeur ou partenaire de livraison ?",
+      "contactFor": "Contactez-nous pour :",
+      "services": {
+        "vendorOnboarding": "Inscription vendeur",
+        "business": "Partenariats commerciaux",
+        "delivery": "Collaboration agence de livraison"
+      }
+    },
+    "urgent": {
+      "title": "Besoin d'aide immédiate ?",
+      "description": "Pour les problèmes urgents liés aux commandes ou livraisons en cours, appelez-nous ou envoyez-nous un message WhatsApp pour une assistance plus rapide.",
+      "call": "Appeler",
+      "whatsapp": "WhatsApp"
+    }
+  },
+  "chat": {
+    "openChat": "Ouvrir le chat",
+    "supportChat": "Chat Support",
+    "minimize": "Réduire",
+    "expand": "Agrandir",
+    "close": "Fermer",
+    "loginRequired": "Connexion Requise",
+    "loginRequiredDesc": "Veuillez vous connecter pour démarrer une conversation avec notre équipe support.",
+    "login": "Se Connecter",
+    "startConversation": "Envoyez-nous un message et nous vous répondrons dès que possible.",
+    "support": "Support",
+    "typeMessage": "Tapez votre message...",
+    "sendMessage": "Envoyer",
+    "conversationClosed": "Cette conversation a été fermée",
+    "noConversations": "Aucune conversation",
+    "open": "Ouvert",
+    "resolved": "Résolu",
+    "closed": "Fermé"
+  },
+  "disclaimer": {
+    "hero": {
+      "title": "Avertissement",
+      "lastUpdated": "Dernière mise à jour : 22 janvier 2026",
+      "description": "Veuillez lire attentivement cet avertissement avant d'utiliser la plateforme Jemo. En accédant ou en utilisant nos services, vous reconnaissez avoir lu et compris cet avertissement."
+    },
+    "notice": {
+      "title": "Avis Important",
+      "content": "Les informations fournies sur Jemo sont à des fins d'information générale uniquement. Bien que nous nous efforcions de maintenir les informations à jour et exactes, nous ne faisons aucune déclaration ou garantie de quelque nature que ce soit quant à l'exhaustivité, l'exactitude, la fiabilité ou la disponibilité de la plateforme ou des produits qui y sont répertoriés."
+    },
+    "general": {
+      "title": "1. Avertissement Général",
+      "desc1": "Jemo est une plateforme de marché en ligne qui facilite les transactions entre acheteurs et vendeurs indépendants. Nous fournissons la technologie et la plateforme pour connecter ces parties mais ne participons pas directement aux transactions entre elles.",
+      "desc2": "Toute confiance que vous accordez aux informations disponibles sur Jemo est strictement à vos propres risques. Nous déclinons toute responsabilité découlant de toute confiance accordée à ces informations par vous ou tout autre visiteur de la plateforme."
+    },
+    "marketplace": {
+      "title": "2. Nature de la Marketplace",
+      "subtitle": "En tant que plateforme de marché, il est important de comprendre que :",
+      "point1": "Jemo ne possède, ne fabrique, ne stocke ni n'inspecte aucun des produits répertoriés sur la plateforme",
+      "point2": "Tous les produits sont répertoriés, tarifés, décrits et expédiés entièrement par des vendeurs tiers indépendants",
+      "point3": "Jemo ne garantit pas la qualité, la sécurité, la légalité ou l'exactitude des produits ou des annonces",
+      "point4": "Nous ne sommes pas partie aux transactions entre acheteurs et vendeurs"
+    },
+    "product": {
+      "title": "3. Responsabilité Produit",
+      "subtitle": "Concernant les produits vendus sur Jemo :",
+      "point1": "Jemo n'est pas responsable des défauts, dommages ou problèmes de qualité des produits",
+      "point2": "Les vendeurs sont seuls responsables de l'exactitude des descriptions, images et spécifications des produits",
+      "point3": "Les garanties produits, le cas échéant, sont fournies par les vendeurs ou fabricants, pas par Jemo",
+      "point4": "Toute réclamation concernant les produits doit être adressée au vendeur concerné"
+    },
+    "accuracy": {
+      "title": "4. Exactitude des Informations",
+      "point1": "Les informations produits, prix et disponibilités sont fournis par les vendeurs et peuvent changer sans préavis",
+      "point2": "Nous ne vérifions pas, n'approuvons pas et ne garantissons pas l'exactitude des informations fournies par les vendeurs ou utilisateurs",
+      "point3": "Les images affichées peuvent différer des produits réels, et les descriptions peuvent contenir des erreurs",
+      "note": "Nous vous recommandons de contacter directement les vendeurs pour les spécifications critiques avant l'achat."
+    },
+    "thirdParty": {
+      "title": "5. Liens & Services Tiers",
+      "desc1": "Jemo peut contenir des liens vers des sites Web ou services externes qui ne sont pas exploités par nous. Nous n'avons aucun contrôle sur le contenu, les politiques de confidentialité ou les pratiques des sites tiers.",
+      "desc2": "Nous n'approuvons pas et n'assumons aucune responsabilité pour les sites, services ou contenus tiers. Vos interactions avec des tiers sont uniquement entre vous et eux.",
+      "desc3": "Nous vous encourageons à consulter les conditions et politiques de confidentialité de tout site tiers que vous visitez."
+    },
+    "warranty": {
+      "title": "6. Absence de Garanties",
+      "subtitle": "La plateforme et tout le contenu sont fournis \"en l'état\" et \"selon disponibilité\". Nous déclinons expressément toutes les garanties de quelque nature que ce soit, y compris mais sans s'y limiter :",
+      "point1": "Les garanties de qualité marchande ou d'adéquation à un usage particulier",
+      "point2": "Les garanties que la plateforme sera ininterrompue, sécurisée ou sans erreur",
+      "point3": "Les garanties concernant l'exactitude ou la fiabilité des informations",
+      "point4": "Les garanties liées aux produits vendus par des vendeurs tiers"
+    },
+    "liability": {
+      "title": "7. Limitation de Responsabilité",
+      "desc1": "Dans toute la mesure permise par la loi applicable, Jemo et ses propriétaires, employés, affiliés et partenaires ne seront pas responsables de tout dommage indirect, accessoire, spécial, consécutif ou punitif découlant de votre utilisation de la plateforme.",
+      "desc2": "Cela inclut, mais sans s'y limiter, les dommages pour perte de profits, de données, de clientèle ou d'autres pertes intangibles, même si nous avons été informés de la possibilité de tels dommages.",
+      "note": "Certaines juridictions n'autorisent pas l'exclusion de certaines garanties ou la limitation de responsabilité, donc certaines des dispositions ci-dessus peuvent ne pas s'appliquer à vous."
+    },
+    "user": {
+      "title": "8. Responsabilité de l'Utilisateur",
+      "subtitle": "En tant qu'utilisateur de Jemo, vous êtes responsable de :",
+      "responsibility1": "Vérifier les informations produits et la crédibilité des vendeurs avant d'effectuer des achats",
+      "responsibility2": "Lire et comprendre les politiques de retour des vendeurs avant de commander",
+      "responsibility3": "Utiliser la plateforme conformément à toutes les lois et réglementations applicables",
+      "responsibility4": "Protéger vos identifiants de compte et signaler tout accès non autorisé",
+      "responsibility5": "Communiquer honnêtement et respectueusement avec les vendeurs et autres utilisateurs"
+    },
+    "changes": {
+      "title": "9. Modifications de cet Avertissement",
+      "desc1": "Nous nous réservons le droit de modifier ou de remplacer cet avertissement à tout moment à notre seule discrétion.",
+      "desc2": "Les modifications prendront effet immédiatement après leur publication sur la plateforme avec une date de révision mise à jour.",
+      "note": "Votre utilisation continue de Jemo après toute modification constitue une acceptation de l'avertissement modifié."
+    },
+    "related": {
+      "title": "Politiques Connexes",
+      "terms": "Conditions d'Utilisation",
+      "privacy": "Politique de Confidentialité",
+      "returns": "Politique de Retour"
+    },
+    "contact": {
+      "title": "Questions sur cet Avertissement ?",
+      "subtitle": "Si vous avez des questions ou des préoccupations concernant cet avertissement, veuillez nous contacter.",
+      "platform": "Marketplace Jemo"
+    }
   }
 }

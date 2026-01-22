@@ -26,6 +26,8 @@ import { VendorWalletApiModule } from "./vendor/wallet/vendor-wallet-api.module"
 import { DeliveryModule } from "./delivery/delivery.module";
 import { HealthController } from "./health/health.controller";
 import { PublicSettingsModule } from "./settings/public-settings.module";
+import { ShipmentsModule } from "./shipments/shipments.module";
+import { ChatModule } from "./chat/chat.module";
 
 @Module({
   imports: [
@@ -55,6 +57,8 @@ import { PublicSettingsModule } from "./settings/public-settings.module";
     VendorWalletApiModule,
     DeliveryModule,
     PublicSettingsModule,
+    ShipmentsModule,
+    ChatModule,
   ],
   controllers: [HealthController],
 })
